@@ -34,7 +34,7 @@ jobs:
           # Copy all frontend files to the site directory
           cp -r frontend/* _site/
           # Replace index.html with the GitHub Pages version
-          mv _site/index-gh-pages.html _site/index.html
+          mv _site/index-github.html _site/index.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

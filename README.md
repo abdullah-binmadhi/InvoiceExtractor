@@ -134,6 +134,29 @@ If you prefer to deploy as a single service:
 
 3. For frontend access, you'll need to serve the frontend files separately or access the API directly.
 
+## GitHub Pages Demo Version
+
+This repository also includes a GitHub Pages demo version that runs entirely in your browser:
+
+- No server required
+- All processing happens locally in your browser
+- Uses Tesseract.js for OCR
+- Limited functionality compared to the full version
+
+To use the GitHub Pages version:
+1. Visit https://your-username.github.io/InvoiceExtractor/
+2. Upload a PNG or JPG file
+3. View extracted data directly in your browser
+
+Note: The GitHub Pages version has limitations:
+- Less accurate OCR than the server-side version
+- No PDF support
+- No persistent storage
+- No batch processing
+- Slower processing for large images
+
+For the full feature set, run the application locally using the deployment script.
+
 ## API Endpoints
 - POST /api/upload - Upload single document
 - POST /api/classify-document - Classify document as invoice or receipt
