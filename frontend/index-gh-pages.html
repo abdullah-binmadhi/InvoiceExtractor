@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvoiceExtractor - Demo</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .demo-info {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .demo-info h3 {
+            margin-top: 0;
+        }
+        
+        .demo-controls {
+            display: flex;
+            gap: 1rem;
+            margin: 1rem 0;
+            flex-wrap: wrap;
+        }
+        
+        .demo-btn {
+            background-color: #17a2b8;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .demo-btn:hover {
+            background-color: #138496;
+        }
+        
+        .mock-results {
+            background-color: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 1rem;
+        }
+        
+        .mock-result-item {
+            margin-bottom: 1rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .mock-result-item:last-child {
+            border-bottom: none;
+        }
+        
+        .mock-result-label {
+            font-weight: bold;
+            margin-bottom: 0.25rem;
+            color: #555;
+        }
+        
+        .mock-result-value {
+            margin-left: 1rem;
+            padding: 0.25rem 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>InvoiceExtractor - Demo</h1>
+            <nav>
+                <button id="upload-btn" class="nav-btn active">Demo</button>
+                <button id="history-btn" class="nav-btn">Sample Results</button>
+            </nav>
+        </header>
+        
+        <main>
+            <!-- Demo Section -->
+            <section id="demo-section" class="section active">
+                <div class="demo-info">
+                    <h3>GitHub Pages Demo Version</h3>
+                    <p>This is a frontend-only demo of the InvoiceExtractor application. The full version requires a backend server for OCR processing and data extraction.</p>
+                    <p>In the full version, you would be able to:</p>
+                    <ul>
+                        <li>Upload PDF/image files (PDF, JPG, PNG)</li>
+                        <li>Automatically classify documents as invoices or receipts</li>
+                        <li>Extract data using OCR and text processing</li>
+                        <li>View and edit extracted data</li>
+                        <li>Export results as JSON/CSV</li>
+                        <li>Process multiple documents in batches</li>
+                        <li>Validate data with intelligent checks</li>
+                    </ul>
+                </div>
+                
+                <div class="demo-controls">
+                    <button id="show-invoice-demo" class="demo-btn">Show Invoice Sample</button>
+                    <button id="show-receipt-demo" class="demo-btn">Show Receipt Sample</button>
+                    <button id="show-batch-demo" class="demo-btn">Show Batch Sample</button>
+                </div>
+                
+                <div id="mock-results-container"></div>
+            </section>
+            
+            <!-- Sample Results Section -->
+            <section id="sample-results-section" class="section hidden">
+                <h2>Sample Results</h2>
+                <div class="mock-results">
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Invoice Number</div>
+                        <div class="mock-result-value">INV-2023-001</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Date</div>
+                        <div class="mock-result-value">08/26/2023</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Vendor</div>
+                        <div class="mock-result-value">ABC Supplies Inc.</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Total Amount</div>
+                        <div class="mock-result-value">$1,250.00</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tax Amount</div>
+                        <div class="mock-result-value">$87.50</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Line Items</div>
+                        <div class="mock-result-value">
+                            <table style="width:100%;border-collapse:collapse;margin-top:0.5rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd;">Description</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Office Chairs (5)</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$750.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Desks (2)</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$400.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Delivery Fee</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$100.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
+                <h3 style="margin-top:2rem;">Receipt Sample</h3>
+                <div class="mock-results">
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Merchant Name</div>
+                        <div class="mock-result-value">Joe's Coffee Shop</div>
+                    </div>
+                    <div class="mock-result-label">Date</div>
+                    <div class="mock-result-value">08/26/2023</div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Time</div>
+                        <div class="mock-result-value">10:30 AM</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Total Amount</div>
+                        <div class="mock-result-value">$12.75</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tax Amount</div>
+                        <div class="mock-result-value">$1.15</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tip Amount</div>
+                        <div class="mock-result-value">$2.00</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Receipt Items</div>
+                        <div class="mock-result-value">
+                            <table style="width:100%;border-collapse:collapse;margin-top:0.5rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd;">Item</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Qty</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Price</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Coffee</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">1</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$3.50</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$3.50</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Pastry</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">2</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$2.25</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.50</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Sandwich</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">1</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.75</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.75</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script>
+        // DOM Elements
+        const demoSection = document.getElementById('demo-section');
+        const sampleResultsSection = document.getElementById('sample-results-section');
+        const uploadBtn = document.getElementById('upload-btn');
+        const historyBtn = document.getElementById('history-btn');
+        const showInvoiceDemoBtn = document.getElementById('show-invoice-demo');
+        const showReceiptDemoBtn = document.getElementById('show-receipt-demo');
+        const showBatchDemoBtn = document.getElementById('show-batch-demo');
+        const mockResultsContainer = document.getElementById('mock-results-container');
+        
+        // Navigation
+        function showSection(section) {
+            demoSection.classList.remove('active');
+            sampleResultsSection.classList.remove('active');
+            section.classList.add('active');
+        }
+        
+        // Event Listeners
+        uploadBtn.addEventListener('click', () => showSection(demoSection));
+        historyBtn.addEventListener('click', () => showSection(sampleResultsSection));
+        
+        showInvoiceDemoBtn.addEventListener('click', showInvoiceDemo);
+        showReceiptDemoBtn.addEventListener('click', showReceiptDemo);
+        showBatchDemoBtn.addEventListener('click', showBatchDemo);
+        
+        // Demo Functions
+        function showInvoiceDemo() {
+            mockResultsContainer.innerHTML = `
+                <div class="mock-results">
+                    <h3>Invoice Sample Results</h3>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Document Type</div>
+                        <div class="mock-result-value">Invoice</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Invoice Number</div>
+                        <div class="mock-result-value">INV-2023-001</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Date</div>
+                        <div class="mock-result-value">08/26/2023</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Vendor</div>
+                        <div class="mock-result-value">ABC Supplies Inc.</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Total Amount</div>
+                        <div class="mock-result-value">$1,250.00</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tax Amount</div>
+                        <div class="mock-result-value">$87.50</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Line Items</div>
+                        <div class="mock-result-value">
+                            <table style="width:100%;border-collapse:collapse;margin-top:0.5rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd;">Description</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Office Chairs (5)</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$750.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Desks (2)</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$400.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Delivery Fee</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$100.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showReceiptDemo() {
+            mockResultsContainer.innerHTML = `
+                <div class="mock-results">
+                    <h3>Receipt Sample Results</h3>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Document Type</div>
+                        <div class="mock-result-value">Receipt</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Merchant Name</div>
+                        <div class="mock-result-value">Joe's Coffee Shop</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Date</div>
+                        <div class="mock-result-value">08/26/2023</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Time</div>
+                        <div class="mock-result-value">10:30 AM</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Total Amount</div>
+                        <div class="mock-result-value">$12.75</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tax Amount</div>
+                        <div class="mock-result-value">$1.15</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tip Amount</div>
+                        <div class="mock-result-value">$2.00</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Receipt Items</div>
+                        <div class="mock-result-value">
+                            <table style="width:100%;border-collapse:collapse;margin-top:0.5rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd;">Item</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Qty</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Price</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Coffee</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">1</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$3.50</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$3.50</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Pastry</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">2</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$2.25</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.50</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Sandwich</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">1</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.75</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.75</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showBatchDemo() {
+            mockResultsContainer.innerHTML = `
+                <div class="mock-results">
+                    <h3>Batch Processing Sample</h3>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Batch ID</div>
+                        <div class="mock-result-value">#12345</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Status</div>
+                        <div class="mock-result-value">Completed</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Total Files</div>
+                        <div class="mock-result-value">5</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Processed</div>
+                        <div class="mock-result-value">5</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Failed</div>
+                        <div class="mock-result-value">0</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Results Summary</div>
+                        <div class="mock-result-value">
+                            <ul>
+                                <li>Invoice #INV-2023-001: $1,250.00</li>
+                                <li>Receipt from Joe's Coffee Shop: $12.75</li>
+                                <li>Invoice #INV-2023-002: $845.50</li>
+                                <li>Receipt from Gas Station: $45.20</li>
+                                <li>Online Purchase Confirmation: $29.99</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>
