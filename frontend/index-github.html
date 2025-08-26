@@ -6,6 +6,187 @@
     <title>InvoiceExtractor - GitHub Pages</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.min.js"></script>
+    <style>
+        .demo-info {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .demo-info h3 {
+            margin-top: 0;
+        }
+        
+        .feature-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .feature-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .feature-card h4 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        
+        .limitations {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 4px;
+        }
+        
+        .enhanced-results {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            margin-top: 1rem;
+        }
+        
+        .result-section {
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .result-section:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .result-item {
+            display: flex;
+            margin-bottom: 0.5rem;
+        }
+        
+        .result-label {
+            font-weight: bold;
+            min-width: 150px;
+            color: #555;
+        }
+        
+        .result-value {
+            flex: 1;
+        }
+        
+        .confidence {
+            font-size: 0.8em;
+            margin-left: 0.5rem;
+        }
+        
+        .high-confidence {
+            color: green;
+        }
+        
+        .medium-confidence {
+            color: orange;
+        }
+        
+        .low-confidence {
+            color: red;
+        }
+        
+        .line-items-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 0.5rem;
+        }
+        
+        .line-items-table th,
+        .line-items-table td {
+            text-align: left;
+            padding: 0.5rem;
+            border-bottom: 1px solid #ddd;
+        }
+        
+        .line-items-table th {
+            background-color: #f8f9fa;
+            font-weight: bold;
+        }
+        
+        .document-type-indicator {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            font-weight: bold;
+            margin-bottom: 1rem;
+        }
+        
+        .document-type-indicator.invoice {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        
+        .document-type-indicator.receipt {
+            background-color: #cce7ff;
+            color: #004085;
+        }
+        
+        .validation-alerts {
+            padding: 1rem;
+            border-radius: 4px;
+            margin: 1rem 0;
+        }
+        
+        .validation-alerts.error {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        
+        .validation-alerts.warning {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+        
+        .validation-alerts.info {
+            background-color: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+        
+        .export-buttons {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+        }
+        
+        .btn {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            opacity: 0.9;
+        }
+    </style>
 </head>
 <body>
     <div id="app">
@@ -13,7 +194,7 @@
             <h1>InvoiceExtractor - GitHub Pages</h1>
             <nav>
                 <button id="upload-btn" class="nav-btn active">Upload</button>
-                <button id="demo-btn" class="nav-btn">Demo</button>
+                <button id="demo-btn" class="nav-btn">Features & Limitations</button>
             </nav>
         </header>
         
@@ -40,41 +221,96 @@
                 <div id="results-container" class="results-container hidden">
                     <h3>Extracted Data</h3>
                     <div id="extracted-results"></div>
-                    <button id="export-json" class="btn">Export as JSON</button>
-                    <button id="export-csv" class="btn">Export as CSV</button>
+                    <div class="export-buttons">
+                        <button id="export-json" class="btn btn-primary">Export as JSON</button>
+                        <button id="export-csv" class="btn btn-primary">Export as CSV</button>
+                        <button id="new-extraction" class="btn btn-secondary">New Extraction</button>
+                    </div>
                 </div>
             </section>
             
             <!-- Demo Section -->
             <section id="demo-section" class="section hidden">
-                <h2>How It Works</h2>
+                <h2>Enhanced GitHub Pages Version</h2>
                 <div class="demo-info">
-                    <p>This GitHub Pages version processes files directly in your browser using Tesseract.js OCR.</p>
+                    <p>This enhanced GitHub Pages version processes files directly in your browser using advanced browser-based OCR.</p>
                     <p><strong>No data is sent to any server - all processing happens locally on your device!</strong></p>
-                    
-                    <h3>Features:</h3>
+                </div>
+                
+                <h3>Enhanced Features:</h3>
+                <div class="feature-list">
+                    <div class="feature-card">
+                        <h4>📄 PDF Support</h4>
+                        <p>Process PDF files directly in your browser using PDF.js</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔍 Advanced OCR</h4>
+                        <p>Improved text recognition with Tesseract.js 4.0</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🧾 Smart Extraction</h4>
+                        <p>Intelligent data extraction for invoices and receipts</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📊 Line Items</h4>
+                        <p>Extract detailed line items with quantities and prices</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🏷️ Categorization</h4>
+                        <p>Automatic expense categorization based on merchant</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📤 Export Options</h4>
+                        <p>Export results as JSON or CSV for further analysis</p>
+                    </div>
+                </div>
+                
+                <h3>Technical Improvements:</h3>
+                <div class="feature-list">
+                    <div class="feature-card">
+                        <h4>⚡ Multi-Page PDFs</h4>
+                        <p>Process all pages of multi-page PDF documents</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🎯 Confidence Scoring</h4>
+                        <p>See confidence levels for each extracted field</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>📱 Responsive Design</h4>
+                        <p>Works on desktop and mobile devices</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🎨 Modern UI</h4>
+                        <p>Clean, intuitive interface with visual feedback</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🛡️ Privacy Focused</h4>
+                        <p>All processing happens locally - your data never leaves your device</p>
+                    </div>
+                    <div class="feature-card">
+                        <h4>🔄 Real-time Updates</h4>
+                        <p>Progress indicators show processing status</p>
+                    </div>
+                </div>
+                
+                <div class="limitations">
+                    <h3>Limitations Compared to Full Version:</h3>
                     <ul>
-                        <li>PDF, PNG, JPG file support</li>
-                        <li>Browser-based OCR processing</li>
-                        <li>Automatic invoice/receipt data extraction</li>
-                        <li>Export results as JSON/CSV</li>
-                        <li>All processing happens locally</li>
-                    </ul>
-                    
-                    <h3>Limitations:</h3>
-                    <ul>
-                        <li>Less accurate than server-side processing</li>
+                        <li>Less accurate OCR than server-side processing</li>
                         <li>Slower processing for large files</li>
                         <li>No persistent storage or history</li>
                         <li>No batch processing</li>
+                        <li>No user authentication</li>
+                        <li>Limited validation capabilities</li>
+                        <li>No database storage</li>
                     </ul>
-                    
-                    <h3>For Full Features:</h3>
-                    <p>To use the complete InvoiceExtractor with server-side processing, batch uploads, and database storage, you'll need to run it locally:</p>
-                    <pre><code>git clone https://github.com/your-username/InvoiceExtractor.git
+                </div>
+                
+                <h3>For Full Features:</h3>
+                <p>To use the complete InvoiceExtractor with server-side processing, batch uploads, and database storage, you'll need to run it locally:</p>
+                <pre><code>git clone https://github.com/abdullah-binmadhi/InvoiceExtractor.git
 cd InvoiceExtractor
 ./deploy.sh</code></pre>
-                </div>
             </section>
         </main>
         
@@ -97,6 +333,10 @@ cd InvoiceExtractor
         const extractedResults = document.getElementById('extracted-results');
         const exportJsonBtn = document.getElementById('export-json');
         const exportCsvBtn = document.getElementById('export-csv');
+        const newExtractionBtn = document.getElementById('new-extraction');
+        
+        // Set up PDF.js worker
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.11.338/pdf.worker.min.js';
         
         // Navigation
         document.getElementById('upload-btn').addEventListener('click', () => {
@@ -140,6 +380,10 @@ cd InvoiceExtractor
         
         exportJsonBtn.addEventListener('click', () => exportResults('json'));
         exportCsvBtn.addEventListener('click', () => exportResults('csv'));
+        newExtractionBtn.addEventListener('click', () => {
+            resultsContainer.classList.add('hidden');
+            uploadSection.classList.add('active');
+        });
         
         // Functions
         function handleFileSelect(e) {
@@ -182,23 +426,26 @@ cd InvoiceExtractor
                 await worker.loadLanguage('eng');
                 await worker.initialize('eng');
                 
+                let fullText = '';
+                
                 // Process file based on type
                 if (file.type === 'application/pdf') {
                     progressText.textContent = 'Converting PDF to images...';
-                    // For PDF, we would need pdf.js, but for simplicity, we'll show an error
-                    throw new Error('PDF processing requires additional libraries. Please use PNG or JPG files for this demo.');
+                    fullText = await processPDF(file, worker);
                 } else {
                     // Process image file
                     progressText.textContent = 'Performing OCR...';
                     const { data: { text } } = await worker.recognize(file);
-                    await worker.terminate();
-                    
-                    // Extract data from text
-                    const extractedData = extractDataFromText(text);
-                    
-                    // Show results
-                    displayResults(extractedData);
+                    fullText = text;
                 }
+                
+                await worker.terminate();
+                
+                // Extract data from text
+                const extractedData = extractDataFromText(fullText);
+                
+                // Show results
+                displayResults(extractedData);
             } catch (error) {
                 console.error('Processing error:', error);
                 progressText.textContent = `Error: ${error.message}`;
@@ -208,32 +455,183 @@ cd InvoiceExtractor
             }
         }
         
+        async function processPDF(file, worker) {
+            const typedarray = new Uint8Array(await file.arrayBuffer());
+            const pdf = await pdfjsLib.getDocument(typedarray).promise;
+            
+            let fullText = '';
+            
+            for (let i = 1; i <= pdf.numPages; i++) {
+                progressText.textContent = `Processing page ${i} of ${pdf.numPages}...`;
+                
+                const page = await pdf.getPage(i);
+                const viewport = page.getViewport({ scale: 1.5 });
+                const canvas = document.createElement('canvas');
+                const context = canvas.getContext('2d');
+                canvas.height = viewport.height;
+                canvas.width = viewport.width;
+                
+                await page.render({
+                    canvasContext: context,
+                    viewport: viewport
+                }).promise;
+                
+                const { data: { text } } = await worker.recognize(canvas);
+                fullText += text + '\\n\\n';
+            }
+            
+            return fullText;
+        }
+        
         function extractDataFromText(text) {
-            // Simple regex-based extraction
-            const data = {};
+            // Simple regex-based extraction with confidence scoring
+            const data = {
+                document_type: { value: 'unknown', confidence: 0.5 },
+                line_items: { value: [], confidence: 0.7 }
+            };
+            
+            // Determine document type
+            const receiptIndicators = ['thank you', 'cash', 'credit', 'change', 'subtotal', 'tax', 'tip', 'total'];
+            const invoiceIndicators = ['invoice', 'bill to', 'due date', 'terms', 'subtotal', 'balance due'];
+            
+            let receiptScore = 0;
+            let invoiceScore = 0;
+            
+            const lowerText = text.toLowerCase();
+            
+            receiptIndicators.forEach(indicator => {
+                if (lowerText.includes(indicator)) receiptScore++;
+            });
+            
+            invoiceIndicators.forEach(indicator => {
+                if (lowerText.includes(indicator)) invoiceScore++;
+            });
+            
+            if (receiptScore > invoiceScore) {
+                data.document_type = { value: 'receipt', confidence: Math.min(0.9, 0.5 + (receiptScore * 0.1)) };
+            } else if (invoiceScore > receiptScore) {
+                data.document_type = { value: 'invoice', confidence: Math.min(0.9, 0.5 + (invoiceScore * 0.1)) };
+            } else {
+                data.document_type = { value: 'unknown', confidence: 0.3 };
+            }
             
             // Extract vendor/merchant
-            const vendorMatch = text.match(/(?:vendor|merchant|from)[:\s]*([^\n\r]+)/i);
-            if (vendorMatch) {
-                data.vendor = vendorMatch[1].trim();
+            const vendorPatterns = [
+                /(?:vendor|merchant|from)[:\\s]*([^\n\r]+)/i,
+                /^([A-Z][A-Z\\s]+)\\s*\\n/i, // Top of document, all caps
+                /(?:sold by|store)[:\\s]*([^\n\r]+)/i
+            ];
+            
+            for (const pattern of vendorPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    data.vendor = { value: match[1].trim(), confidence: 0.8 };
+                    break;
+                }
             }
             
             // Extract date
-            const dateMatch = text.match(/(?:date|invoice date)[:\s]*([0-9]{1,2}[\/\-][0-9]{1,2}[\/\-][0-9]{2,4})/i);
-            if (dateMatch) {
-                data.date = dateMatch[1].trim();
+            const datePatterns = [
+                /(?:date|invoice date)[:\\s]*([0-9]{1,2}[\/\\-][0-9]{1,2}[\/\\-][0-9]{2,4})/i,
+                /([0-9]{1,2}[\/\\-][0-9]{1,2}[\/\\-][0-9]{2,4})/g
+            ];
+            
+            for (const pattern of datePatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    data.date = { value: match[1] || match[0], confidence: 0.7 };
+                    break;
+                }
             }
             
             // Extract total
-            const totalMatch = text.match(/(?:total|amount due)[:\s\$]*([0-9]+\.?[0-9]*)/i);
-            if (totalMatch) {
-                data.total = totalMatch[1].trim();
+            const totalPatterns = [
+                /(?:total|amount due|balance due)[:\\s\$]*([0-9]+\\.?[0-9]*)/i,
+                /total[:\\s]*\\$([0-9]+\\.?[0-9]*)/i
+            ];
+            
+            for (const pattern of totalPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    data.total = { value: match[1], confidence: 0.9 };
+                    break;
+                }
             }
             
             // Extract invoice number
-            const invoiceMatch = text.match(/(?:invoice #|invoice number)[:\s]*([^\n\r]+)/i);
-            if (invoiceMatch) {
-                data.invoice_number = invoiceMatch[1].trim();
+            const invoicePatterns = [
+                /(?:invoice #|invoice number)[:\\s]*([^\n\r]+)/i,
+                /(INV[-\\s]*[0-9]+)/i
+            ];
+            
+            for (const pattern of invoicePatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    data.invoice_number = { value: match[1], confidence: 0.8 };
+                    break;
+                }
+            }
+            
+            // Extract subtotal
+            const subtotalPatterns = [
+                /(?:subtotal)[:\\s\$]*([0-9]+\\.?[0-9]*)/i
+            ];
+            
+            for (const pattern of subtotalPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    data.subtotal = { value: match[1], confidence: 0.8 };
+                    break;
+                }
+            }
+            
+            // Extract tax
+            const taxPatterns = [
+                /(?:tax)[:\\s\$]*([0-9]+\\.?[0-9]*)/i
+            ];
+            
+            for (const pattern of taxPatterns) {
+                const match = text.match(pattern);
+                if (match) {
+                    data.tax = { value: match[1], confidence: 0.8 };
+                    break;
+                }
+            }
+            
+            // Extract line items (simplified)
+            // Look for patterns like "Item Name $10.00" or "Item Name 1 x $5.00"
+            const lineItemRegex = /([A-Za-z\s]+?)\s+(?:[0-9]+\.?[0-9]*\s*x\s*)?\$([0-9]+\.?[0-9]*)/g;
+            const lineItems = [];
+            let match;
+            
+            while ((match = lineItemRegex.exec(text)) !== null) {
+                lineItems.push({
+                    description: match[1].trim(),
+                    amount: match[2],
+                    confidence: 0.7
+                });
+            }
+            
+            if (lineItems.length > 0) {
+                data.line_items = { value: lineItems, confidence: 0.8 };
+            }
+            
+            // Auto-categorization based on vendor
+            if (data.vendor && data.vendor.value) {
+                const vendor = data.vendor.value.toLowerCase();
+                let category = 'Other';
+                
+                if (vendor.includes('restaurant') || vendor.includes('cafe') || vendor.includes('coffee')) {
+                    category = 'Food & Dining';
+                } else if (vendor.includes('gas') || vendor.includes('shell') || vendor.includes('bp')) {
+                    category = 'Transportation';
+                } else if (vendor.includes('grocery') || vendor.includes('market') || vendor.includes('walmart')) {
+                    category = 'Grocery';
+                } else if (vendor.includes('office') || vendor.includes('staples') || vendor.includes('best buy')) {
+                    category = 'Office Supplies';
+                }
+                
+                data.category = { value: category, confidence: 0.7 };
             }
             
             return data;
@@ -244,23 +642,105 @@ cd InvoiceExtractor
             
             if (Object.keys(data).length === 0) {
                 extractedResults.innerHTML = '<p>No data extracted. Try a clearer image with more text.</p>';
-            } else {
-                for (const [key, value] of Object.entries(data)) {
-                    const itemDiv = document.createElement('div');
-                    itemDiv.className = 'result-item';
-                    
-                    const label = document.createElement('div');
-                    label.className = 'result-label';
-                    label.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    itemDiv.appendChild(label);
-                    
-                    const valueDiv = document.createElement('div');
-                    valueDiv.className = 'result-value';
-                    valueDiv.textContent = value;
-                    itemDiv.appendChild(valueDiv);
-                    
-                    extractedResults.appendChild(itemDiv);
+                progressContainer.classList.add('hidden');
+                resultsContainer.classList.remove('hidden');
+                return;
+            }
+            
+            // Document type indicator
+            if (data.document_type) {
+                const typeIndicator = document.createElement('div');
+                typeIndicator.className = `document-type-indicator ${data.document_type.value}`;
+                typeIndicator.innerHTML = `Document Type: <strong>${data.document_type.value.toUpperCase()}</strong> 
+                    <span class="confidence ${(data.document_type.confidence > 0.8) ? 'high-confidence' : (data.document_type.confidence > 0.5) ? 'medium-confidence' : 'low-confidence'}">
+                        (${Math.round(data.document_type.confidence * 100)}% confidence)
+                    </span>`;
+                extractedResults.appendChild(typeIndicator);
+            }
+            
+            // Create sections for different data types
+            const generalSection = document.createElement('div');
+            generalSection.className = 'result-section';
+            generalSection.innerHTML = '<h4>General Information</h4>';
+            
+            const financialSection = document.createElement('div');
+            financialSection.className = 'result-section';
+            financialSection.innerHTML = '<h4>Financial Details</h4>';
+            
+            const itemsSection = document.createElement('div');
+            itemsSection.className = 'result-section';
+            itemsSection.innerHTML = '<h4>Line Items</h4>';
+            
+            // Add fields to appropriate sections
+            for (const [key, valueObj] of Object.entries(data)) {
+                if (!valueObj || key === 'document_type' || key === 'line_items') continue;
+                
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'result-item';
+                
+                const label = document.createElement('div');
+                label.className = 'result-label';
+                label.textContent = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                itemDiv.appendChild(label);
+                
+                const valueDiv = document.createElement('div');
+                valueDiv.className = 'result-value';
+                
+                let displayValue = valueObj.value;
+                if (key.includes('amount') || key.includes('total') || key.includes('subtotal') || key.includes('tax')) {
+                    if (displayValue && !isNaN(displayValue)) {
+                        displayValue = `$${parseFloat(displayValue).toFixed(2)}`;
+                    }
                 }
+                
+                valueDiv.innerHTML = `${displayValue || 'N/A'} 
+                    <span class="confidence ${(valueObj.confidence > 0.8) ? 'high-confidence' : (valueObj.confidence > 0.5) ? 'medium-confidence' : 'low-confidence'}">
+                        (${Math.round(valueObj.confidence * 100)}%)
+                    </span>`;
+                
+                itemDiv.appendChild(valueDiv);
+                
+                // Add to appropriate section
+                if (key.includes('total') || key.includes('subtotal') || key.includes('tax') || key.includes('tip')) {
+                    financialSection.appendChild(itemDiv);
+                } else {
+                    generalSection.appendChild(itemDiv);
+                }
+            }
+            
+            // Add line items table
+            if (data.line_items && data.line_items.value && data.line_items.value.length > 0) {
+                const table = document.createElement('table');
+                table.className = 'line-items-table';
+                
+                const header = table.createTHead();
+                const headerRow = header.insertRow();
+                const descHeader = headerRow.insertCell();
+                descHeader.textContent = 'Description';
+                const amountHeader = headerRow.insertCell();
+                amountHeader.textContent = 'Amount';
+                amountHeader.style.textAlign = 'right';
+                
+                const tbody = table.createTBody();
+                data.line_items.value.forEach(item => {
+                    const row = tbody.insertRow();
+                    const descCell = row.insertCell();
+                    descCell.textContent = item.description;
+                    const amountCell = row.insertCell();
+                    amountCell.textContent = `$${parseFloat(item.amount).toFixed(2)}`;
+                    amountCell.style.textAlign = 'right';
+                });
+                
+                itemsSection.appendChild(table);
+                extractedResults.appendChild(itemsSection);
+            }
+            
+            // Add sections to results
+            extractedResults.appendChild(generalSection);
+            extractedResults.appendChild(financialSection);
+            
+            if (data.line_items && data.line_items.value && data.line_items.value.length > 0) {
+                extractedResults.appendChild(itemsSection);
             }
             
             progressContainer.classList.add('hidden');
@@ -268,13 +748,29 @@ cd InvoiceExtractor
         }
         
         function exportResults(format) {
-            // Simple export functionality
+            // Collect all data from the results display
             const data = {};
-            const resultItems = document.querySelectorAll('.result-item');
-            resultItems.forEach(item => {
+            
+            // Get document type
+            const typeIndicator = document.querySelector('.document-type-indicator');
+            if (typeIndicator) {
+                data.document_type = typeIndicator.textContent.trim();
+            }
+            
+            // Get general information
+            const generalItems = document.querySelectorAll('.result-section:first-child .result-item');
+            generalItems.forEach(item => {
                 const label = item.querySelector('.result-label').textContent;
-                const value = item.querySelector('.result-value').textContent;
-                data[label] = value;
+                const value = item.querySelector('.result-value').textContent.replace(/\s*\([^)]*\)/, ''); // Remove confidence score
+                data[label] = value.trim();
+            });
+            
+            // Get financial details
+            const financialItems = document.querySelectorAll('.result-section:nth-child(2) .result-item');
+            financialItems.forEach(item => {
+                const label = item.querySelector('.result-label').textContent;
+                const value = item.querySelector('.result-value').textContent.replace(/\s*\([^)]*\)/, ''); // Remove confidence score
+                data[label] = value.trim();
             });
             
             if (format === 'json') {
