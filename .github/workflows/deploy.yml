@@ -3,9 +3,22 @@ name: Deploy to GitHub Pages
 on:
   push:
     branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: "pages"
+  cancel-in-progress: false
 
 jobs:
   deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -16,12 +29,10 @@ jobs:
 
       - name: Prepare frontend files
         run: |
-          # Copy the GitHub Pages version as index.html
-          cp frontend/index-gh-pages.html frontend/index.html
-          # Remove the special version
-          rm frontend/index-gh-pages.html
+          # Replace the existing index.html with the GitHub Pages version
+          mv frontend/index-gh-pages.html frontend/index.html
 
-      - name: Upload frontend files
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v2
         with:
           path: './frontend'
