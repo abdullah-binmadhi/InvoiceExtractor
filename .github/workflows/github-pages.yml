@@ -12,7 +12,7 @@ permissions:
 
 concurrency:
   group: "pages"
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   deploy:
@@ -22,27 +22,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v3
 
       - name: Setup Pages
-        uses: actions/configure-pages@v5
-
-      - name: Build static site
-        run: |
-          # Create a clean directory for the site
-          mkdir -p _site
-          # Copy all frontend files to the site directory
-          cp -r frontend/* _site/
-          # Replace index.html with the GitHub Pages version
-          mv _site/index-github.html _site/index.html
-          # Remove any unnecessary files
-          rm -f _site/*.md
+        uses: actions/configure-pages@v3
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v2
         with:
-          path: '_site'
+          path: './frontend'
 
       - name: Deploy to GitHub Pages
         id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@v2
