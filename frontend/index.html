@@ -12,12 +12,14 @@
             <h1>InvoiceExtractor</h1>
             <nav>
                 <button id="upload-btn" class="nav-btn active">Upload</button>
+                <button id="batch-upload-btn" class="nav-btn">Batch Upload</button>
                 <button id="history-btn" class="nav-btn">History</button>
+                <button id="batch-history-btn" class="nav-btn">Batch History</button>
             </nav>
         </header>
         
         <main>
-            <!-- Upload Section -->
+            <!-- Single Upload Section -->
             <section id="upload-section" class="section active">
                 <div class="upload-container">
                     <div id="drop-area" class="drop-area">
@@ -31,6 +33,28 @@
                             <div id="progress-fill" class="progress-fill"></div>
                         </div>
                         <p id="progress-text">Processing...</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Batch Upload Section -->
+            <section id="batch-upload-section" class="section hidden">
+                <div class="batch-upload-container">
+                    <div id="batch-drop-area" class="drop-area">
+                        <p>Drag & drop multiple files or a ZIP file here</p>
+                        <p>or</p>
+                        <button id="batch-browse-btn" class="browse-btn">Browse Files</button>
+                        <input type="file" id="batch-file-input" accept=".pdf,.png,.jpg,.jpeg,.zip" multiple hidden>
+                    </div>
+                    <div class="batch-info">
+                        <p>Maximum 20 files per batch, 50MB total size limit</p>
+                    </div>
+                    <div id="batch-progress-container" class="progress-container hidden">
+                        <div class="progress-bar">
+                            <div id="batch-progress-fill" class="progress-fill"></div>
+                        </div>
+                        <p id="batch-progress-text">Processing batch...</p>
+                        <div id="batch-progress-details" class="progress-details"></div>
                     </div>
                 </div>
             </section>
@@ -63,11 +87,48 @@
                 </div>
             </section>
             
+            <!-- Batch Results Section -->
+            <section id="batch-results-section" class="section hidden">
+                <h2>Batch Results</h2>
+                <div class="batch-summary">
+                    <h3>Batch #<span id="batch-id"></span></h3>
+                    <div class="batch-stats">
+                        <div class="stat">
+                            <span class="stat-label">Total Files:</span>
+                            <span id="total-files" class="stat-value"></span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Processed:</span>
+                            <span id="processed-files" class="stat-value"></span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Failed:</span>
+                            <span id="failed-files" class="stat-value"></span>
+                        </div>
+                    </div>
+                </div>
+                <div id="batch-results-container" class="results-container">
+                    <!-- Batch results will be populated here -->
+                </div>
+                <div class="batch-actions">
+                    <button id="export-batch-json" class="export-btn">Export Batch as JSON</button>
+                    <button id="export-batch-csv" class="export-btn">Export Batch as CSV</button>
+                </div>
+            </section>
+            
             <!-- History Section -->
             <section id="history-section" class="section hidden">
                 <h2>Processing History</h2>
                 <div id="history-container" class="history-container">
                     <!-- History will be populated here -->
+                </div>
+            </section>
+            
+            <!-- Batch History Section -->
+            <section id="batch-history-section" class="section hidden">
+                <h2>Batch Processing History</h2>
+                <div id="batch-history-container" class="history-container">
+                    <!-- Batch history will be populated here -->
                 </div>
             </section>
         </main>

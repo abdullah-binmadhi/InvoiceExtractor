@@ -12,6 +12,8 @@ A web application for extracting invoice and receipt data from PDFs and images u
 - Processing history with document type indicators
 - Simple authentication
 - Automatic expense categorization
+- **Batch processing of multiple documents**
+- **ZIP file support for batch uploads**
 
 ## Tech Stack
 - Backend: Python/Flask
@@ -82,22 +84,29 @@ InvoiceExtractor/
    - Password: password
 
 ## API Endpoints
-- POST /api/upload - Upload document
+- POST /api/upload - Upload single document
 - POST /api/classify-document - Classify document as invoice or receipt
-- GET /api/results/{id} - Get extraction results
+- GET /api/results/{id} - Get extraction results for single document
 - GET /api/receipts/{id} - Get receipt-specific data
 - POST /api/correct/{id} - Save manual corrections
 - GET /api/history - List past extractions
 - POST /api/login - User authentication
 - GET /api/export/{id}/{format} - Export results (format: json or csv)
 
+### Batch Processing Endpoints
+- POST /api/upload-batch - Upload and process multiple documents
+- GET /api/batch-status/{batch_id} - Get processing progress for batch
+- GET /api/batch-results/{batch_id} - Get all results from batch
+- POST /api/download-batch/{batch_id} - Download batch results (JSON or CSV)
+
 ## Database Schema
-- documents table: id, filename, upload_date, status, document_type
+- documents table: id, filename, upload_date, status, document_type, batch_id
 - extractions table: id, document_id, field_name, field_value, confidence_score
 - corrections table: id, extraction_id, original_value, corrected_value
 - users table: id, username, password_hash
 - receipt_items table: id, document_id, item_name, quantity, unit_price, total_price
 - receipt_details table: id, document_id, merchant_name, location, payment_method, tip_amount, subtotal, tax_amount, total_amount, cashier_name, transaction_time, category
+- batch_jobs table: id, user_id, status, total_files, processed_files, failed_files, created_date, completed_date
 
 ## Processing Logic
 
@@ -136,6 +145,13 @@ Automatic categorization based on merchant names and keywords:
 - Travel (hotels, airlines)
 - Entertainment (movies, events)
 
+### Batch Processing
+1. Create batch job record in database
+2. Handle ZIP files or multiple individual uploads
+3. Process each document individually with progress tracking
+4. Update batch progress as each document completes
+5. Generate combined results when batch finishes
+
 ## Implementation Details
 
 ### Backend Components
@@ -164,6 +180,17 @@ Automatic categorization based on merchant names and keywords:
 10. **Progress Indicators**: Visual feedback during file processing
 11. **Error Handling**: Proper validation and error messages for edge cases
 12. **Expense Categorization**: Automatic categorization of expenses
+13. **Batch Processing**: Handle multiple documents simultaneously
+14. **ZIP File Support**: Extract and process documents from ZIP archives
+
+## Batch Processing Features
+- Accept ZIP files containing multiple documents
+- Support drag & drop of multiple individual files
+- Maximum 20 files per batch, 50MB total size limit
+- Real-time progress tracking
+- Batch results summary with success/error counts
+- Combined export options (JSON, CSV)
+- Batch history view
 
 ## Deployment Scripts
 - **deploy.sh**: Automated setup script for macOS/Linux

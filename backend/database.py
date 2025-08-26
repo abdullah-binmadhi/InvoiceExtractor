@@ -20,7 +20,9 @@ def init_db():
             filename TEXT NOT NULL,
             upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             status TEXT DEFAULT 'uploaded',
-            document_type TEXT DEFAULT 'unknown'  -- 'invoice' or 'receipt'
+            document_type TEXT DEFAULT 'unknown',  -- 'invoice' or 'receipt'
+            batch_id INTEGER DEFAULT NULL,  -- Link to batch_jobs table
+            FOREIGN KEY (batch_id) REFERENCES batch_jobs (id)
         )
     ''')
     
@@ -89,6 +91,21 @@ def init_db():
         )
     ''')
     
+    # Create batch_jobs table for batch processing
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS batch_jobs (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            status TEXT DEFAULT 'pending',  -- pending, processing, completed, failed
+            total_files INTEGER DEFAULT 0,
+            processed_files INTEGER DEFAULT 0,
+            failed_files INTEGER DEFAULT 0,
+            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            completed_date TIMESTAMP NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+    ''')
+    
     # Create a default admin user if none exists
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
@@ -103,13 +120,13 @@ def init_db():
     conn.commit()
     conn.close()
 
-def insert_document(filename, document_type='unknown'):
+def insert_document(filename, document_type='unknown', batch_id=None):
     """Insert a new document record"""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO documents (filename, document_type) VALUES (?, ?)",
-        (filename, document_type)
+        "INSERT INTO documents (filename, document_type, batch_id) VALUES (?, ?, ?)",
+        (filename, document_type, batch_id)
     )
     doc_id = cursor.lastrowid
     conn.commit()
@@ -274,3 +291,90 @@ def get_document_type(doc_id):
     result = cursor.fetchone()
     conn.close()
     return result[0] if result else 'unknown'
+
+def insert_batch_job(user_id, total_files):
+    """Insert a new batch job record"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO batch_jobs (user_id, total_files) VALUES (?, ?)",
+        (user_id, total_files)
+    )
+    batch_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return batch_id
+
+def update_batch_status(batch_id, status, processed_files=None, failed_files=None):
+    """Update batch job status"""
+    conn = get_db()
+    cursor = conn.cursor()
+    
+    if status == 'completed':
+        cursor.execute(
+            "UPDATE batch_jobs SET status = ?, processed_files = ?, failed_files = ?, completed_date = CURRENT_TIMESTAMP WHERE id = ?",
+            (status, processed_files, failed_files, batch_id)
+        )
+    else:
+        if processed_files is not None and failed_files is not None:
+            cursor.execute(
+                "UPDATE batch_jobs SET status = ?, processed_files = ?, failed_files = ? WHERE id = ?",
+                (status, processed_files, failed_files, batch_id)
+            )
+        elif processed_files is not None:
+            cursor.execute(
+                "UPDATE batch_jobs SET status = ?, processed_files = ? WHERE id = ?",
+                (status, processed_files, batch_id)
+            )
+        elif failed_files is not None:
+            cursor.execute(
+                "UPDATE batch_jobs SET status = ?, failed_files = ? WHERE id = ?",
+                (status, failed_files, batch_id)
+            )
+        else:
+            cursor.execute(
+                "UPDATE batch_jobs SET status = ? WHERE id = ?",
+                (status, batch_id)
+            )
+    
+    conn.commit()
+    conn.close()
+
+def get_batch_job(batch_id):
+    """Get batch job details"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM batch_jobs WHERE id = ?",
+        (batch_id,)
+    )
+    result = cursor.fetchone()
+    conn.close()
+    return dict(result) if result else None
+
+def get_batch_documents(batch_id):
+    """Get all documents in a batch"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM documents WHERE batch_id = ?",
+        (batch_id,)
+    )
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results]
+
+def get_batch_history(user_id):
+    """Get batch processing history for a user"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT bj.*, u.username
+        FROM batch_jobs bj
+        JOIN users u ON bj.user_id = u.id
+        WHERE bj.user_id = ?
+        ORDER BY bj.created_date DESC
+    ''', (user_id,))
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results]

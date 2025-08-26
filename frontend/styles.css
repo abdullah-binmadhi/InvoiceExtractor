@@ -115,6 +115,11 @@ main {
     transition: width 0.3s;
 }
 
+.progress-details {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+}
+
 .hidden {
     display: none;
 }
@@ -192,7 +197,7 @@ main {
     font-size: 1rem;
 }
 
-.actions {
+.actions, .batch-actions {
     display: flex;
     justify-content: center;
     gap: 1rem;
@@ -276,6 +281,11 @@ main {
     color: #721c24;
 }
 
+.status.pending {
+    background-color: #cce7ff;
+    color: #004085;
+}
+
 .document-type-tag {
     padding: 0.25rem 0.5rem;
     border-radius: 4px;
@@ -291,6 +301,41 @@ main {
 .document-type-tag.receipt {
     background-color: #fff3cd;
     color: #856404;
+}
+
+.batch-summary {
+    background-color: #e3f2fd;
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.batch-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 0.5rem;
+}
+
+.stat {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.stat-value {
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+.batch-info {
+    text-align: center;
+    margin: 1rem 0;
+    color: #666;
+    font-size: 0.9rem;
 }
 
 @media (max-width: 768px) {
@@ -317,7 +362,7 @@ main {
         padding: 2rem 1rem;
     }
     
-    .actions {
+    .actions, .batch-actions {
         flex-direction: column;
         align-items: center;
     }
@@ -325,5 +370,10 @@ main {
     .export-btn, .save-btn {
         width: 100%;
         margin-bottom: 0.5rem;
+    }
+    
+    .batch-stats {
+        flex-direction: column;
+        gap: 0.5rem;
     }
 }

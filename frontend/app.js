@@ -1,25 +1,53 @@
 // DOM Elements
 const uploadSection = document.getElementById('upload-section');
+const batchUploadSection = document.getElementById('batch-upload-section');
 const resultsSection = document.getElementById('results-section');
+const batchResultsSection = document.getElementById('batch-results-section');
 const historySection = document.getElementById('history-section');
+const batchHistorySection = document.getElementById('batch-history-section');
+
 const uploadBtn = document.getElementById('upload-btn');
+const batchUploadBtn = document.getElementById('batch-upload-btn');
 const historyBtn = document.getElementById('history-btn');
+const batchHistoryBtn = document.getElementById('batch-history-btn');
+
 const dropArea = document.getElementById('drop-area');
+const batchDropArea = document.getElementById('batch-drop-area');
 const fileInput = document.getElementById('file-input');
+const batchFileInput = document.getElementById('batch-file-input');
 const browseBtn = document.getElementById('browse-btn');
+const batchBrowseBtn = document.getElementById('batch-browse-btn');
+
 const progressContainer = document.getElementById('progress-container');
+const batchProgressContainer = document.getElementById('batch-progress-container');
 const progressFill = document.getElementById('progress-fill');
+const batchProgressFill = document.getElementById('batch-progress-fill');
 const progressText = document.getElementById('progress-text');
+const batchProgressText = document.getElementById('batch-progress-text');
+const batchProgressDetails = document.getElementById('batch-progress-details');
+
 const resultsContainer = document.getElementById('results-container');
+const batchResultsContainer = document.getElementById('batch-results-container');
 const historyContainer = document.getElementById('history-container');
+const batchHistoryContainer = document.getElementById('batch-history-container');
+
 const exportJsonBtn = document.getElementById('export-json');
 const exportCsvBtn = document.getElementById('export-csv');
+const exportBatchJsonBtn = document.getElementById('export-batch-json');
+const exportBatchCsvBtn = document.getElementById('export-batch-csv');
 const saveCorrectionsBtn = document.getElementById('save-corrections');
+
 const documentTypeIndicator = document.querySelector('.document-type-indicator');
 const expenseCategorySelect = document.getElementById('expense-category');
 
+const batchIdElement = document.getElementById('batch-id');
+const totalFilesElement = document.getElementById('total-files');
+const processedFilesElement = document.getElementById('processed-files');
+const failedFilesElement = document.getElementById('failed-files');
+
 // State
 let currentDocumentId = null;
+let currentBatchId = null;
 let extractedData = {};
 let documentType = 'unknown';
 
@@ -27,8 +55,11 @@ let documentType = 'unknown';
 function showSection(section) {
     // Hide all sections
     uploadSection.classList.remove('active');
+    batchUploadSection.classList.remove('active');
     resultsSection.classList.remove('active');
+    batchResultsSection.classList.remove('active');
     historySection.classList.remove('active');
+    batchHistorySection.classList.remove('active');
     
     // Show selected section
     section.classList.add('active');
@@ -36,14 +67,21 @@ function showSection(section) {
 
 // Event Listeners
 uploadBtn.addEventListener('click', () => showSection(uploadSection));
+batchUploadBtn.addEventListener('click', () => showSection(batchUploadSection));
 historyBtn.addEventListener('click', () => {
     showSection(historySection);
     loadHistory();
 });
+batchHistoryBtn.addEventListener('click', () => {
+    showSection(batchHistorySection);
+    loadBatchHistory();
+});
 
 browseBtn.addEventListener('click', () => fileInput.click());
+batchBrowseBtn.addEventListener('click', () => batchFileInput.click());
 
 fileInput.addEventListener('change', handleFileSelect);
+batchFileInput.addEventListener('change', handleBatchFileSelect);
 
 dropArea.addEventListener('dragover', (e) => {
     e.preventDefault();
@@ -63,16 +101,43 @@ dropArea.addEventListener('drop', (e) => {
     }
 });
 
+batchDropArea.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    batchDropArea.classList.add('dragover');
+});
+
+batchDropArea.addEventListener('dragleave', () => {
+    batchDropArea.classList.remove('dragover');
+});
+
+batchDropArea.addEventListener('drop', (e) => {
+    e.preventDefault();
+    batchDropArea.classList.remove('dragover');
+    
+    if (e.dataTransfer.files.length) {
+        handleBatchFiles(e.dataTransfer.files);
+    }
+});
+
 dropArea.addEventListener('click', () => fileInput.click());
+batchDropArea.addEventListener('click', () => batchFileInput.click());
 
 exportJsonBtn.addEventListener('click', () => exportResults('json'));
 exportCsvBtn.addEventListener('click', () => exportResults('csv'));
+exportBatchJsonBtn.addEventListener('click', () => exportBatchResults('json'));
+exportBatchCsvBtn.addEventListener('click', () => exportBatchResults('csv'));
 saveCorrectionsBtn.addEventListener('click', saveCorrections);
 
 // File Handling
 function handleFileSelect(e) {
     if (e.target.files.length) {
         handleFiles(e.target.files);
+    }
+}
+
+function handleBatchFileSelect(e) {
+    if (e.target.files.length) {
+        handleBatchFiles(e.target.files);
     }
 }
 
@@ -94,6 +159,38 @@ function handleFiles(files) {
     }
     
     uploadFile(file);
+}
+
+function handleBatchFiles(files) {
+    if (files.length === 0) return;
+    
+    // Check batch size limits
+    if (files.length > 20) {
+        alert('Maximum 20 files allowed per batch.');
+        return;
+    }
+    
+    // Check total size (50MB limit)
+    let totalSize = 0;
+    for (let file of files) {
+        totalSize += file.size;
+    }
+    
+    if (totalSize > 50 * 1024 * 1024) {
+        alert('Total batch size exceeds 50MB limit.');
+        return;
+    }
+    
+    // Check file types
+    const allowedTypes = ['application/pdf', 'image/png', 'image/jpeg', 'application/zip'];
+    for (let file of files) {
+        if (!allowedTypes.includes(file.type)) {
+            alert(`File ${file.name} has an unsupported type. Only PDF, PNG, JPG, and ZIP files are allowed.`);
+            return;
+        }
+    }
+    
+    uploadBatchFiles(files);
 }
 
 // API Functions
@@ -147,6 +244,48 @@ async function uploadFile(file) {
         progressText.textContent = `Error: ${error.message}`;
         setTimeout(() => {
             progressContainer.classList.add('hidden');
+        }, 3000);
+    }
+}
+
+async function uploadBatchFiles(files) {
+    // Show batch progress
+    showSection(batchUploadSection);
+    batchProgressContainer.classList.remove('hidden');
+    batchProgressFill.style.width = '0%';
+    batchProgressText.textContent = 'Uploading batch...';
+    batchProgressDetails.innerHTML = '';
+    
+    // Create FormData
+    const formData = new FormData();
+    for (let file of files) {
+        formData.append('files', file);
+    }
+    
+    try {
+        // Upload batch
+        const response = await fetch('http://localhost:5000/api/upload-batch', {
+            method: 'POST',
+            body: formData
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Batch upload failed: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Store batch ID
+        currentBatchId = data.batch_id;
+        
+        // Show batch results
+        displayBatchResults(data.batch_id);
+        
+    } catch (error) {
+        console.error('Batch upload error:', error);
+        batchProgressText.textContent = `Error: ${error.message}`;
+        setTimeout(() => {
+            batchProgressContainer.classList.add('hidden');
         }, 3000);
     }
 }
@@ -312,6 +451,82 @@ function displayResults(results) {
     }
 }
 
+async function displayBatchResults(batchId) {
+    try {
+        // Fetch batch results
+        const response = await fetch(`http://localhost:5000/api/batch-results/${batchId}`);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch batch results: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        
+        // Update batch summary
+        batchIdElement.textContent = batchId;
+        totalFilesElement.textContent = data.results.length;
+        
+        // Count processed and failed files
+        let processedCount = 0;
+        let failedCount = 0;
+        
+        data.results.forEach(result => {
+            if (result.status === 'completed') {
+                processedCount++;
+            } else if (result.status === 'failed') {
+                failedCount++;
+            }
+        });
+        
+        processedFilesElement.textContent = processedCount;
+        failedFilesElement.textContent = failedCount;
+        
+        // Display results for each document
+        batchResultsContainer.innerHTML = '';
+        
+        data.results.forEach(result => {
+            const docDiv = document.createElement('div');
+            docDiv.className = 'result-item';
+            
+            const header = document.createElement('div');
+            header.className = 'history-header';
+            header.innerHTML = `
+                <span>${result.filename}</span>
+                <span class="status ${result.status}">${result.status}</span>
+            `;
+            docDiv.appendChild(header);
+            
+            if (result.status === 'completed' && result.results) {
+                const resultsDiv = document.createElement('div');
+                resultsDiv.style.marginTop = '1rem';
+                
+                // Display key fields
+                const fieldsToShow = ['merchant_name', 'vendor', 'total', 'date'];
+                fieldsToShow.forEach(field => {
+                    if (result.results[field] && result.results[field].value) {
+                        const fieldDiv = document.createElement('div');
+                        fieldDiv.style.marginBottom = '0.5rem';
+                        fieldDiv.innerHTML = `
+                            <strong>${formatFieldName(field)}:</strong> 
+                            ${result.results[field].value}
+                        `;
+                        resultsDiv.appendChild(fieldDiv);
+                    }
+                });
+                
+                docDiv.appendChild(resultsDiv);
+            }
+            
+            batchResultsContainer.appendChild(docDiv);
+        });
+        
+        showSection(batchResultsSection);
+        
+    } catch (error) {
+        console.error('Batch results error:', error);
+        alert(`Failed to load batch results: ${error.message}`);
+    }
+}
+
 function formatFieldName(field) {
     // Convert snake_case to Title Case
     const formatted = field
@@ -345,6 +560,17 @@ async function loadHistory() {
     } catch (error) {
         console.error('History load error:', error);
         historyContainer.innerHTML = `<p>Error loading history: ${error.message}</p>`;
+    }
+}
+
+async function loadBatchHistory() {
+    try {
+        // For now, we'll simulate batch history
+        // In a real implementation, this would fetch from the backend
+        batchHistoryContainer.innerHTML = '<p>Batch history will be available in a future update.</p>';
+    } catch (error) {
+        console.error('Batch history load error:', error);
+        batchHistoryContainer.innerHTML = `<p>Error loading batch history: ${error.message}</p>`;
     }
 }
 
@@ -419,6 +645,50 @@ async function exportResults(format) {
     } catch (error) {
         console.error('Export error:', error);
         alert(`Export failed: ${error.message}`);
+    }
+}
+
+async function exportBatchResults(format) {
+    if (!currentBatchId) return;
+    
+    try {
+        const response = await fetch(`http://localhost:5000/api/download-batch/${currentBatchId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ format: format })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Batch export failed: ${response.statusText}`);
+        }
+        
+        if (format === 'json') {
+            const data = await response.json();
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `batch_${currentBatchId}_results.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } else if (format === 'csv') {
+            const blob = await response.blob();
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `batch_${currentBatchId}_results.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    } catch (error) {
+        console.error('Batch export error:', error);
+        alert(`Batch export failed: ${error.message}`);
     }
 }
 
