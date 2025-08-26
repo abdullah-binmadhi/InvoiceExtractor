@@ -21,7 +21,7 @@
             <section id="upload-section" class="section active">
                 <div class="upload-container">
                     <div id="drop-area" class="drop-area">
-                        <p>Drag & drop your invoice file here</p>
+                        <p>Drag & drop your invoice or receipt file here</p>
                         <p>or</p>
                         <button id="browse-btn" class="browse-btn">Browse Files</button>
                         <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg" hidden>
@@ -38,8 +38,23 @@
             <!-- Results Section -->
             <section id="results-section" class="section hidden">
                 <h2>Extracted Data</h2>
+                <div class="document-type-indicator">
+                    <span id="document-type">Document Type: <strong></strong></span>
+                </div>
                 <div id="results-container" class="results-container">
                     <!-- Results will be populated here -->
+                </div>
+                <div class="category-assignment">
+                    <label for="expense-category">Expense Category:</label>
+                    <select id="expense-category">
+                        <option value="Food & Dining">Food & Dining</option>
+                        <option value="Grocery">Grocery</option>
+                        <option value="Transportation">Transportation</option>
+                        <option value="Office Supplies">Office Supplies</option>
+                        <option value="Travel">Travel</option>
+                        <option value="Entertainment">Entertainment</option>
+                        <option value="Other">Other</option>
+                    </select>
                 </div>
                 <div class="actions">
                     <button id="export-json" class="export-btn">Export as JSON</button>

@@ -19,7 +19,8 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             filename TEXT NOT NULL,
             upload_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            status TEXT DEFAULT 'uploaded'
+            status TEXT DEFAULT 'uploaded',
+            document_type TEXT DEFAULT 'unknown'  -- 'invoice' or 'receipt'
         )
     ''')
     
@@ -56,6 +57,38 @@ def init_db():
         )
     ''')
     
+    # Create receipt_items table for receipt-specific line items
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS receipt_items (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            document_id INTEGER NOT NULL,
+            item_name TEXT,
+            quantity REAL,
+            unit_price REAL,
+            total_price REAL,
+            FOREIGN KEY (document_id) REFERENCES documents (id)
+        )
+    ''')
+    
+    # Create receipt_details table for receipt-specific details
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS receipt_details (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            document_id INTEGER NOT NULL,
+            merchant_name TEXT,
+            location TEXT,
+            payment_method TEXT,
+            tip_amount REAL,
+            subtotal REAL,
+            tax_amount REAL,
+            total_amount REAL,
+            cashier_name TEXT,
+            transaction_time TEXT,
+            category TEXT,
+            FOREIGN KEY (document_id) REFERENCES documents (id)
+        )
+    ''')
+    
     # Create a default admin user if none exists
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
@@ -70,13 +103,13 @@ def init_db():
     conn.commit()
     conn.close()
 
-def insert_document(filename):
+def insert_document(filename, document_type='unknown'):
     """Insert a new document record"""
     conn = get_db()
     cursor = conn.cursor()
     cursor.execute(
-        "INSERT INTO documents (filename) VALUES (?)",
-        (filename,)
+        "INSERT INTO documents (filename, document_type) VALUES (?, ?)",
+        (filename, document_type)
     )
     doc_id = cursor.lastrowid
     conn.commit()
@@ -162,3 +195,82 @@ def authenticate_user(username, password):
     user = cursor.fetchone()
     conn.close()
     return dict(user) if user else None
+
+def insert_receipt_item(document_id, item_name, quantity, unit_price, total_price):
+    """Insert a receipt item"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO receipt_items (document_id, item_name, quantity, unit_price, total_price) VALUES (?, ?, ?, ?, ?)",
+        (document_id, item_name, quantity, unit_price, total_price)
+    )
+    item_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return item_id
+
+def get_receipt_items(document_id):
+    """Get all receipt items for a document"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM receipt_items WHERE document_id = ?",
+        (document_id,)
+    )
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results]
+
+def insert_receipt_details(document_id, merchant_name=None, location=None, payment_method=None, 
+                          tip_amount=None, subtotal=None, tax_amount=None, total_amount=None, 
+                          cashier_name=None, transaction_time=None, category=None):
+    """Insert receipt details"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        '''INSERT INTO receipt_details 
+           (document_id, merchant_name, location, payment_method, tip_amount, 
+            subtotal, tax_amount, total_amount, cashier_name, transaction_time, category) 
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)''',
+        (document_id, merchant_name, location, payment_method, tip_amount, 
+         subtotal, tax_amount, total_amount, cashier_name, transaction_time, category)
+    )
+    details_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return details_id
+
+def get_receipt_details(document_id):
+    """Get receipt details for a document"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM receipt_details WHERE document_id = ?",
+        (document_id,)
+    )
+    result = cursor.fetchone()
+    conn.close()
+    return dict(result) if result else None
+
+def update_document_type(doc_id, document_type):
+    """Update document type"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE documents SET document_type = ? WHERE id = ?",
+        (document_type, doc_id)
+    )
+    conn.commit()
+    conn.close()
+
+def get_document_type(doc_id):
+    """Get document type"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT document_type FROM documents WHERE id = ?",
+        (doc_id,)
+    )
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else 'unknown'

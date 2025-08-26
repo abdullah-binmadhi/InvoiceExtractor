@@ -15,10 +15,13 @@ const historyContainer = document.getElementById('history-container');
 const exportJsonBtn = document.getElementById('export-json');
 const exportCsvBtn = document.getElementById('export-csv');
 const saveCorrectionsBtn = document.getElementById('save-corrections');
+const documentTypeIndicator = document.querySelector('.document-type-indicator');
+const expenseCategorySelect = document.getElementById('expense-category');
 
 // State
 let currentDocumentId = null;
 let extractedData = {};
+let documentType = 'unknown';
 
 // Navigation
 function showSection(section) {
@@ -130,6 +133,7 @@ async function uploadFile(file) {
         
         // Store document ID and data
         currentDocumentId = data.id;
+        documentType = data.document_type;
         extractedData = data.results;
         
         // Show results after a short delay
@@ -163,8 +167,17 @@ function simulateProgress(start, end, text) {
 function displayResults(results) {
     resultsContainer.innerHTML = '';
     
+    // Update document type indicator
+    const docType = results.document_type?.value || 'unknown';
+    documentTypeIndicator.querySelector('strong').textContent = 
+        docType.charAt(0).toUpperCase() + docType.slice(1);
+    documentTypeIndicator.className = 'document-type-indicator ' + docType;
+    
     // Display each extracted field
     for (const [field, data] of Object.entries(results)) {
+        // Skip document_type as it's displayed separately
+        if (field === 'document_type') continue;
+        
         if (field === 'line_items') {
             // Special handling for line items
             const itemDiv = document.createElement('div');
@@ -172,7 +185,7 @@ function displayResults(results) {
             
             const label = document.createElement('div');
             label.className = 'result-label';
-            label.textContent = 'Line Items';
+            label.textContent = docType === 'receipt' ? 'Receipt Items' : 'Line Items';
             itemDiv.appendChild(label);
             
             if (data.value && Array.isArray(data.value)) {
@@ -181,33 +194,83 @@ function displayResults(results) {
                 table.style.borderCollapse = 'collapse';
                 table.style.marginTop = '0.5rem';
                 
-                // Header
-                const header = table.createTHead();
-                const headerRow = header.insertRow();
-                const descHeader = headerRow.insertCell();
-                descHeader.textContent = 'Description';
-                descHeader.style.fontWeight = 'bold';
-                descHeader.style.borderBottom = '1px solid #ddd';
-                descHeader.style.padding = '0.5rem';
-                const amountHeader = headerRow.insertCell();
-                amountHeader.textContent = 'Amount';
-                amountHeader.style.fontWeight = 'bold';
-                amountHeader.style.borderBottom = '1px solid #ddd';
-                amountHeader.style.padding = '0.5rem';
-                
-                // Rows
-                const tbody = table.createTBody();
-                data.value.forEach(item => {
-                    const row = tbody.insertRow();
-                    const descCell = row.insertCell();
-                    descCell.textContent = item.description || '';
-                    descCell.style.borderBottom = '1px solid #eee';
-                    descCell.style.padding = '0.5rem';
-                    const amountCell = row.insertCell();
-                    amountCell.textContent = item.amount || '';
-                    amountCell.style.borderBottom = '1px solid #eee';
-                    amountCell.style.padding = '0.5rem';
-                });
+                if (docType === 'receipt') {
+                    // Receipt items with quantity, unit price, total
+                    // Header
+                    const header = table.createTHead();
+                    const headerRow = header.insertRow();
+                    const nameHeader = headerRow.insertCell();
+                    nameHeader.textContent = 'Item';
+                    nameHeader.style.fontWeight = 'bold';
+                    nameHeader.style.borderBottom = '1px solid #ddd';
+                    nameHeader.style.padding = '0.5rem';
+                    const qtyHeader = headerRow.insertCell();
+                    qtyHeader.textContent = 'Qty';
+                    qtyHeader.style.fontWeight = 'bold';
+                    qtyHeader.style.borderBottom = '1px solid #ddd';
+                    qtyHeader.style.padding = '0.5rem';
+                    const priceHeader = headerRow.insertCell();
+                    priceHeader.textContent = 'Unit Price';
+                    priceHeader.style.fontWeight = 'bold';
+                    priceHeader.style.borderBottom = '1px solid #ddd';
+                    priceHeader.style.padding = '0.5rem';
+                    const totalHeader = headerRow.insertCell();
+                    totalHeader.textContent = 'Total';
+                    totalHeader.style.fontWeight = 'bold';
+                    totalHeader.style.borderBottom = '1px solid #ddd';
+                    totalHeader.style.padding = '0.5rem';
+                    
+                    // Rows
+                    const tbody = table.createTBody();
+                    data.value.forEach(item => {
+                        const row = tbody.insertRow();
+                        const nameCell = row.insertCell();
+                        nameCell.textContent = item.item_name || '';
+                        nameCell.style.borderBottom = '1px solid #eee';
+                        nameCell.style.padding = '0.5rem';
+                        const qtyCell = row.insertCell();
+                        qtyCell.textContent = item.quantity || '';
+                        qtyCell.style.borderBottom = '1px solid #eee';
+                        qtyCell.style.padding = '0.5rem';
+                        const priceCell = row.insertCell();
+                        priceCell.textContent = item.unit_price ? `$${item.unit_price.toFixed(2)}` : '';
+                        priceCell.style.borderBottom = '1px solid #eee';
+                        priceCell.style.padding = '0.5rem';
+                        const totalCell = row.insertCell();
+                        totalCell.textContent = item.total_price ? `$${item.total_price.toFixed(2)}` : '';
+                        totalCell.style.borderBottom = '1px solid #eee';
+                        totalCell.style.padding = '0.5rem';
+                    });
+                } else {
+                    // Invoice line items
+                    // Header
+                    const header = table.createTHead();
+                    const headerRow = header.insertRow();
+                    const descHeader = headerRow.insertCell();
+                    descHeader.textContent = 'Description';
+                    descHeader.style.fontWeight = 'bold';
+                    descHeader.style.borderBottom = '1px solid #ddd';
+                    descHeader.style.padding = '0.5rem';
+                    const amountHeader = headerRow.insertCell();
+                    amountHeader.textContent = 'Amount';
+                    amountHeader.style.fontWeight = 'bold';
+                    amountHeader.style.borderBottom = '1px solid #ddd';
+                    amountHeader.style.padding = '0.5rem';
+                    
+                    // Rows
+                    const tbody = table.createTBody();
+                    data.value.forEach(item => {
+                        const row = tbody.insertRow();
+                        const descCell = row.insertCell();
+                        descCell.textContent = item.description || '';
+                        descCell.style.borderBottom = '1px solid #eee';
+                        descCell.style.padding = '0.5rem';
+                        const amountCell = row.insertCell();
+                        amountCell.textContent = item.amount ? `$${item.amount}` : '';
+                        amountCell.style.borderBottom = '1px solid #eee';
+                        amountCell.style.padding = '0.5rem';
+                    });
+                }
                 
                 itemDiv.appendChild(table);
             } else {
@@ -242,13 +305,32 @@ function displayResults(results) {
             resultsContainer.appendChild(itemDiv);
         }
     }
+    
+    // Set expense category if available
+    if (results.category?.value) {
+        expenseCategorySelect.value = results.category.value;
+    }
 }
 
 function formatFieldName(field) {
     // Convert snake_case to Title Case
-    return field
+    const formatted = field
         .replace(/_/g, ' ')
         .replace(/\b\w/g, char => char.toUpperCase());
+    
+    // Special formatting for certain fields
+    const fieldNames = {
+        'merchant_name': 'Merchant Name',
+        'receipt_number': 'Receipt Number',
+        'payment_method': 'Payment Method',
+        'cashier_name': 'Cashier Name',
+        'tip': 'Tip Amount',
+        'subtotal': 'Subtotal',
+        'tax': 'Tax Amount',
+        'total': 'Total Amount'
+    };
+    
+    return fieldNames[field] || formatted;
 }
 
 async function loadHistory() {
@@ -280,8 +362,13 @@ function displayHistory(history) {
         
         const headerDiv = document.createElement('div');
         headerDiv.className = 'history-header';
+        
+        // Get document type for this item
+        const docType = item.document_type || 'unknown';
+        const typeTag = `<span class="document-type-tag ${docType}">${docType}</span>`;
+        
         headerDiv.innerHTML = `
-            <span>Document #${item.id}</span>
+            <span>Document #${item.id} ${typeTag}</span>
             <span class="status ${item.status}">${item.status}</span>
         `;
         itemDiv.appendChild(headerDiv);
@@ -313,7 +400,7 @@ async function exportResults(format) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `invoice_${currentDocumentId}.json`;
+            a.download = `document_${currentDocumentId}.json`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -323,7 +410,7 @@ async function exportResults(format) {
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `invoice_${currentDocumentId}.csv`;
+            a.download = `document_${currentDocumentId}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
@@ -347,6 +434,9 @@ async function saveCorrections() {
         const value = input.value;
         corrections[field] = value;
     });
+    
+    // Add expense category
+    corrections['category'] = expenseCategorySelect.value;
     
     try {
         const response = await fetch(`http://localhost:5000/api/correct/${currentDocumentId}`, {

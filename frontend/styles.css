@@ -119,6 +119,22 @@ main {
     display: none;
 }
 
+.document-type-indicator {
+    background-color: #e3f2fd;
+    padding: 0.5rem 1rem;
+    border-radius: 4px;
+    margin-bottom: 1rem;
+    text-align: center;
+}
+
+.document-type-indicator.invoice {
+    background-color: #e8f5e9;
+}
+
+.document-type-indicator.receipt {
+    background-color: #fff3e0;
+}
+
 .results-container {
     background-color: white;
     border-radius: 8px;
@@ -146,6 +162,28 @@ main {
 
 .result-value {
     display: block;
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 1rem;
+}
+
+.category-assignment {
+    margin: 1rem 0;
+    padding: 1rem;
+    background-color: #f8f9fa;
+    border-radius: 4px;
+}
+
+.category-assignment label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: bold;
+}
+
+.category-assignment select {
     width: 100%;
     padding: 0.5rem;
     border: 1px solid #ddd;
@@ -236,6 +274,23 @@ main {
 .status.failed {
     background-color: #f8d7da;
     color: #721c24;
+}
+
+.document-type-tag {
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.document-type-tag.invoice {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.document-type-tag.receipt {
+    background-color: #fff3cd;
+    color: #856404;
 }
 
 @media (max-width: 768px) {
