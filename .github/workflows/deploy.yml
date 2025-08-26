@@ -35,6 +35,8 @@ jobs:
           cp -r frontend/* _site/
           # Replace index.html with the GitHub Pages version
           mv _site/index-github.html _site/index.html
+          # Remove the old demo version
+          rm -f _site/index-gh-pages.html
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
