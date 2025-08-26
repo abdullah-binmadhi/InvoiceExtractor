@@ -378,21 +378,6 @@ def get_batch_documents(batch_id):
     conn.close()
     return [dict(row) for row in results]
 
-def get_batch_history(user_id):
-    """Get batch processing history for a user"""
-    conn = get_db()
-    cursor = conn.cursor()
-    cursor.execute('''
-        SELECT bj.*, u.username
-        FROM batch_jobs bj
-        JOIN users u ON bj.user_id = u.id
-        WHERE bj.user_id = ?
-        ORDER BY bj.created_date DESC
-    ''', (user_id,))
-    results = cursor.fetchall()
-    conn.close()
-    return [dict(row) for row in results]
-
 def insert_validation_issue(document_id, issue_type, severity, description):
     """Insert a validation issue"""
     conn = get_db()
@@ -440,3 +425,18 @@ def get_unacknowledged_issues_count(document_id):
     result = cursor.fetchone()
     conn.close()
     return result[0] if result else 0
+
+def get_batch_history(user_id):
+    """Get batch processing history for a user"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute('''
+        SELECT bj.*, u.username
+        FROM batch_jobs bj
+        JOIN users u ON bj.user_id = u.id
+        WHERE bj.user_id = ?
+        ORDER BY bj.created_date DESC
+    ''', (user_id,))
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results]

@@ -389,25 +389,28 @@ function displayResults(results) {
                     
                     // Rows
                     const tbody = table.createTBody();
-                    data.value.forEach(item => {
+                    for (const item of data.value) {
                         const row = tbody.insertRow();
                         const nameCell = row.insertCell();
                         nameCell.textContent = item.item_name || '';
-                        nameCell.style.borderBottom = '1px solid #eee';
                         nameCell.style.padding = '0.5rem';
+                        nameCell.style.borderBottom = '1px solid #eee';
                         const qtyCell = row.insertCell();
                         qtyCell.textContent = item.quantity || '';
-                        qtyCell.style.borderBottom = '1px solid #eee';
                         qtyCell.style.padding = '0.5rem';
+                        qtyCell.style.borderBottom = '1px solid #eee';
+                        qtyCell.style.textAlign = 'right';
                         const priceCell = row.insertCell();
-                        priceCell.textContent = item.unit_price ? `$${item.unit_price.toFixed(2)}` : '';
-                        priceCell.style.borderBottom = '1px solid #eee';
+                        priceCell.textContent = item.unit_price ? `$${parseFloat(item.unit_price).toFixed(2)}` : '';
                         priceCell.style.padding = '0.5rem';
+                        priceCell.style.borderBottom = '1px solid #eee';
+                        priceCell.style.textAlign = 'right';
                         const totalCell = row.insertCell();
-                        totalCell.textContent = item.total_price ? `$${item.total_price.toFixed(2)}` : '';
-                        totalCell.style.borderBottom = '1px solid #eee';
+                        totalCell.textContent = item.total_price ? `$${parseFloat(item.total_price).toFixed(2)}` : '';
                         totalCell.style.padding = '0.5rem';
-                    });
+                        totalCell.style.borderBottom = '1px solid #eee';
+                        totalCell.style.textAlign = 'right';
+                    }
                 } else {
                     // Invoice line items
                     // Header
@@ -426,49 +429,68 @@ function displayResults(results) {
                     
                     // Rows
                     const tbody = table.createTBody();
-                    data.value.forEach(item => {
+                    for (const item of data.value) {
                         const row = tbody.insertRow();
                         const descCell = row.insertCell();
-                        descCell.textContent = item.description || '';
-                        descCell.style.borderBottom = '1px solid #eee';
+                        descCell.textContent = item.description || item.item_name || '';
                         descCell.style.padding = '0.5rem';
+                        descCell.style.borderBottom = '1px solid #eee';
                         const amountCell = row.insertCell();
-                        amountCell.textContent = item.amount ? `$${item.amount}` : '';
-                        amountCell.style.borderBottom = '1px solid #eee';
+                        amountCell.textContent = item.amount || item.total_price ? `$${parseFloat(item.amount || item.total_price).toFixed(2)}` : '';
                         amountCell.style.padding = '0.5rem';
-                    });
+                        amountCell.style.borderBottom = '1px solid #eee';
+                        amountCell.style.textAlign = 'right';
+                    }
                 }
                 
                 itemDiv.appendChild(table);
             } else {
-                const valueInput = document.createElement('input');
-                valueInput.type = 'text';
-                valueInput.className = 'result-value';
-                valueInput.id = `field-${field}`;
-                valueInput.value = data.value || '';
-                valueInput.dataset.field = field;
-                itemDiv.appendChild(valueInput);
+                const valueDiv = document.createElement('div');
+                valueDiv.className = 'result-value';
+                valueDiv.textContent = 'No items found';
+                itemDiv.appendChild(valueDiv);
             }
             
             resultsContainer.appendChild(itemDiv);
         } else {
-            // Regular fields
+            // Regular field
             const itemDiv = document.createElement('div');
             itemDiv.className = 'result-item';
             
             const label = document.createElement('div');
             label.className = 'result-label';
-            label.textContent = formatFieldName(field);
+            
+            // Format field name for display
+            const formattedFieldName = field.replace(/_/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase());
+            label.textContent = formattedFieldName;
             itemDiv.appendChild(label);
             
-            const valueInput = document.createElement('input');
-            valueInput.type = 'text';
-            valueInput.className = 'result-value';
-            valueInput.id = `field-${field}`;
-            valueInput.value = data.value || '';
-            valueInput.dataset.field = field;
-            itemDiv.appendChild(valueInput);
+            const valueDiv = document.createElement('div');
+            valueDiv.className = 'result-value';
             
+            // Format value for display
+            let displayValue = data.value;
+            if (field.includes('amount') || field.includes('price') || field.includes('total')) {
+                if (displayValue && !isNaN(displayValue)) {
+                    displayValue = `$${parseFloat(displayValue).toFixed(2)}`;
+                }
+            }
+            
+            // Add confidence indicator
+            if (data.confidence !== undefined) {
+                const confidenceSpan = document.createElement('span');
+                confidenceSpan.className = 'confidence';
+                confidenceSpan.textContent = ` (${(data.confidence * 100).toFixed(0)}%)`;
+                confidenceSpan.style.fontSize = '0.8em';
+                confidenceSpan.style.color = data.confidence > 0.8 ? 'green' : data.confidence > 0.5 ? 'orange' : 'red';
+                valueDiv.innerHTML = `${displayValue || 'N/A'} `;
+                valueDiv.appendChild(confidenceSpan);
+            } else {
+                valueDiv.textContent = displayValue || 'N/A';
+            }
+            
+            itemDiv.appendChild(valueDiv);
             resultsContainer.appendChild(itemDiv);
         }
     }
@@ -483,13 +505,11 @@ async function loadValidationIssues(documentId) {
     try {
         const response = await fetch(`http://localhost:5000/api/validation-summary/${documentId}`);
         if (!response.ok) {
-            throw new Error(`Failed to load validation issues: ${response.statusText}`);
+            throw new Error('Failed to load validation issues');
         }
         
-        const data = await response.json();
-        const summary = data.summary;
+        const summary = await response.json();
         
-        // Display validation summary
         if (summary.total_issues > 0) {
             validationAlerts.classList.remove('hidden');
             
@@ -503,65 +523,62 @@ async function loadValidationIssues(documentId) {
                 validationAlerts.classList.add('info');
             }
             
-            // Display summary
-            validationSummary.innerHTML = `
-                <div><strong>${summary.total_issues}</strong> issues found</div>
-                <div><strong>${summary.errors}</strong> errors, <strong>${summary.warnings}</strong> warnings, <strong>${summary.info}</strong> info</div>
-                <div><strong>${summary.unacknowledged}</strong> unacknowledged issues</div>
-            `;
+            // Update summary text
+            let summaryText = `${summary.total_issues} issue${summary.total_issues !== 1 ? 's' : ''} found`;
+            if (summary.errors > 0) {
+                summaryText += ` (${summary.errors} error${summary.errors !== 1 ? 's' : ''})`;
+            }
+            if (summary.warnings > 0) {
+                summaryText += ` (${summary.warnings} warning${summary.warnings !== 1 ? 's' : ''})`;
+            }
+            if (summary.info > 0) {
+                summaryText += ` (${summary.info} info)`;
+            }
+            
+            validationSummary.textContent = summaryText;
+            
+            // Store validation issues for detailed view
+            validationIssues = summary;
         } else {
             validationAlerts.classList.add('hidden');
         }
-        
-        // Load detailed validation issues
-        const issuesResponse = await fetch(`http://localhost:5000/api/validate/${documentId}`);
-        if (issuesResponse.ok) {
-            const issuesData = await issuesResponse.json();
-            validationIssues = issuesData.issues;
-        }
-        
     } catch (error) {
-        console.error('Validation load error:', error);
+        console.error('Error loading validation issues:', error);
         validationAlerts.classList.add('hidden');
     }
 }
 
 function showValidationModal() {
-    // Display validation issues in modal
+    // Populate validation issues list
     validationIssuesList.innerHTML = '';
     
-    if (validationIssues.length === 0) {
-        validationIssuesList.innerHTML = '<p>No validation issues found.</p>';
-        validationModal.classList.remove('hidden');
-        return;
+    // This would typically fetch detailed issues from the API
+    // For now, we'll just show the summary
+    const summaryDiv = document.createElement('div');
+    summaryDiv.className = 'validation-summary-detail';
+    summaryDiv.innerHTML = `
+        <h3>Validation Summary</h3>
+        <p>Total Issues: ${validationIssues.total_issues}</p>
+        <p>Errors: ${validationIssues.errors}</p>
+        <p>Warnings: ${validationIssues.warnings}</p>
+        <p>Info: ${validationIssues.info}</p>
+        <p>Unacknowledged: ${validationIssues.unacknowledged}</p>
+    `;
+    validationIssuesList.appendChild(summaryDiv);
+    
+    // Show issues by type
+    const issuesByTypeDiv = document.createElement('div');
+    issuesByTypeDiv.className = 'validation-issues-by-type';
+    issuesByTypeDiv.innerHTML = '<h3>Issues by Type</h3>';
+    
+    for (const [type, count] of Object.entries(validationIssues.issues_by_type)) {
+        const typeDiv = document.createElement('div');
+        typeDiv.className = 'validation-issue-type';
+        typeDiv.innerHTML = `<strong>${type}:</strong> ${count}`;
+        issuesByTypeDiv.appendChild(typeDiv);
     }
     
-    validationIssues.forEach(issue => {
-        const issueDiv = document.createElement('div');
-        issueDiv.className = `validation-issue ${issue.severity.toLowerCase()}`;
-        
-        issueDiv.innerHTML = `
-            <div class="issue-header">
-                <div class="issue-type">${issue.issue_type}</div>
-                <div class="issue-severity severity ${issue.severity.toLowerCase()}">${issue.severity}</div>
-            </div>
-            <div class="issue-description">${issue.description}</div>
-            ${issue.severity === 'WARNING' ? `<button class="acknowledge-btn" data-issue-id="${issue.id}">Acknowledge</button>` : ''}
-        `;
-        
-        validationIssuesList.appendChild(issueDiv);
-    });
-    
-    // Add event listeners to acknowledge buttons
-    const acknowledgeButtons = validationIssuesList.querySelectorAll('.acknowledge-btn');
-    acknowledgeButtons.forEach(button => {
-        button.addEventListener('click', async (e) => {
-            const issueId = e.target.dataset.issueId;
-            await acknowledgeIssue(issueId);
-            e.target.textContent = 'Acknowledged';
-            e.target.disabled = true;
-        });
-    });
+    validationIssuesList.appendChild(issuesByTypeDiv);
     
     validationModal.classList.remove('hidden');
 }

@@ -4,9 +4,10 @@ A web application for extracting invoice and receipt data from PDFs and images u
 
 ## Features
 - Upload PDF/image files (PDF, JPG, PNG up to 5MB)
-- Automatic document classification (invoice vs receipt)
+- Automatic document classification (invoice vs receipt vs online purchase confirmation)
 - Extract invoice data using OCR and text processing
 - Extract receipt data including detailed line items
+- Extract online purchase confirmation data
 - View and edit extracted data
 - Export results as JSON/CSV
 - Processing history with document type indicators
@@ -15,6 +16,8 @@ A web application for extracting invoice and receipt data from PDFs and images u
 - Batch processing of multiple documents
 - ZIP file support for batch uploads
 - **Intelligent validation to catch errors and suspicious data**
+- Vendor-specific and industry-specific validation rules
+- Enhanced UI with improved validation alerts
 
 ## Tech Stack
 - Backend: Python/Flask
@@ -96,7 +99,7 @@ InvoiceExtractor/
 - GET /api/export/{id}/{format} - Export results (format: json or csv)
 
 ### Batch Processing Endpoints
-- POST /api/upload-batch - Upload and process multiple documents
+- POST /api/upload-batch - Upload and process multiple documents (supports ZIP files)
 - GET /api/batch-status/{batch_id} - Get processing progress for batch
 - GET /api/batch-results/{batch_id} - Get all results from batch
 - POST /api/download-batch/{batch_id} - Download batch results (JSON or CSV)
@@ -120,8 +123,8 @@ InvoiceExtractor/
 
 ### Document Classification
 The system automatically classifies documents as either invoices or receipts based on keyword analysis:
-- Receipt indicators: "Thank you", store names, "Cash/Credit", time stamps
-- Invoice indicators: "Invoice", "Bill To", "Due Date"
+- Receipt indicators: "Thank you", store names, "Cash/Credit", time stamps, "Order Confirmation", "Shipment"
+- Invoice indicators: "Invoice", "Bill To", "Due Date", "Purchase Order"
 
 ### Invoice Processing
 1. Extract text from document (PDF or image)
@@ -144,6 +147,15 @@ The system automatically classifies documents as either invoices or receipts bas
    - Cashier/server names
    - Transaction dates and times
 
+### Online Purchase Confirmation Processing
+1. Extract text from document (PDF or image)
+2. Identify online purchase fields using regex patterns:
+   - Merchant names ("From:", "Sold by:")
+   - Shipping addresses
+   - Itemized lists
+   - Payment methods (PayPal, digital wallets)
+   - Order numbers
+
 ### Expense Categorization
 Automatic categorization based on merchant names and keywords:
 - Food & Dining (restaurants, cafes)
@@ -152,13 +164,15 @@ Automatic categorization based on merchant names and keywords:
 - Office Supplies (office stores, electronics)
 - Travel (hotels, airlines)
 - Entertainment (movies, events)
+- Online Services (Amazon, eBay, subscriptions)
 
 ### Batch Processing
 1. Create batch job record in database
 2. Handle ZIP files or multiple individual uploads
-3. Process each document individually with progress tracking
-4. Update batch progress as each document completes
-5. Generate combined results when batch finishes
+3. Extract files from ZIP archives
+4. Process each document individually with progress tracking
+5. Update batch progress as each document completes
+6. Generate combined results when batch finishes
 
 ### Intelligent Validation
 1. Run validation automatically after extraction
@@ -192,6 +206,16 @@ Automatic categorization based on merchant names and keywords:
 - Low confidence OCR extractions (under 70%)
 - Malformed data (invalid date formats, negative amounts)
 
+### 4. Vendor-Specific Validation
+- Restaurant tip validation (10-25% range)
+- Gas station amount validation ($10-$200)
+- Grocery store amount validation ($20-$500)
+
+### 5. Industry-Specific Validation
+- Food & Dining: Tip percentage validation
+- Transportation: Reasonable gas amounts
+- Office Supplies: Reasonable purchase amounts
+
 ## Implementation Details
 
 ### Backend Components
@@ -200,7 +224,7 @@ Automatic categorization based on merchant names and keywords:
 - **database.py**: SQLite database schema and operations
 - **processing.py**: Document processing logic with OCR and regex pattern matching
 - **routes.py**: API endpoints for upload, results, corrections, history, and authentication
-- **validation.py**: Intelligent validation logic
+- **validation.py**: Intelligent validation logic with vendor and industry-specific rules
 
 ### Frontend Components
 - **index.html**: Main application interface with upload, results, and history sections
@@ -210,7 +234,7 @@ Automatic categorization based on merchant names and keywords:
 
 ### Key Features Implemented
 1. **File Upload**: Drag & drop interface with validation for PDF, JPG, PNG files up to 5MB
-2. **Document Classification**: Automatic detection of document type (invoice vs receipt)
+2. **Document Classification**: Automatic detection of document type (invoice vs receipt vs online confirmation)
 3. **Document Processing**: OCR with pytesseract and text extraction with PyPDF2
 4. **Data Extraction**: Regex patterns to identify document fields
 5. **Editable Results**: Form interface to correct extracted data
@@ -221,9 +245,10 @@ Automatic categorization based on merchant names and keywords:
 10. **Progress Indicators**: Visual feedback during file processing
 11. **Error Handling**: Proper validation and error messages for edge cases
 12. **Expense Categorization**: Automatic categorization of expenses
-13. **Batch Processing**: Handle multiple documents simultaneously
-14. **ZIP File Support**: Extract and process documents from ZIP archives
-15. **Intelligent Validation**: Catch errors and suspicious data with detailed reporting
+13. **Batch Processing**: Handle multiple documents simultaneously with ZIP support
+14. **Intelligent Validation**: Catch errors and suspicious data with detailed reporting
+15. **Vendor-Specific Rules**: Validation tailored to specific merchants
+16. **Industry-Specific Rules**: Validation tailored to business categories
 
 ## Batch Processing Features
 - Accept ZIP files containing multiple documents

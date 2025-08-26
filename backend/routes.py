@@ -215,12 +215,24 @@ def upload_batch():
         failed_count = 0
         document_ids = []
         
+        # Track ZIP files separately
+        zip_files = []
+        regular_files = []
+        
         for file in files:
             # Check if file has a filename
-            if file.filename == '':
+            if not file.filename or file.filename == '':
                 failed_count += 1
                 continue
             
+            # Check if file is a ZIP file
+            if file.filename.lower().endswith('.zip'):
+                zip_files.append(file)
+            else:
+                regular_files.append(file)
+        
+        # Process regular files first
+        for file in regular_files:
             # Check if file type is allowed
             if not allowed_file(file.filename):
                 failed_count += 1
@@ -249,6 +261,71 @@ def upload_batch():
                 # Update batch progress
                 update_batch_status(batch_id, 'processing', processed_count, failed_count)
                 
+            except Exception as e:
+                failed_count += 1
+                update_batch_status(batch_id, 'processing', processed_count, failed_count)
+                continue
+        
+        # Process ZIP files
+        import zipfile
+        import tempfile
+        
+        for zip_file in zip_files:
+            try:
+                # Create a temporary directory to extract files
+                with tempfile.TemporaryDirectory() as temp_dir:
+                    # Save ZIP file temporarily
+                    zip_filename = secure_filename(zip_file.filename) if zip_file.filename else 'batch_zip_file.zip'
+                    zip_path = os.path.join(temp_dir, zip_filename)
+                    zip_file.save(zip_path)
+                    
+                    # Extract ZIP file
+                    with zipfile.ZipFile(zip_path, 'r') as zip_ref:
+                        zip_ref.extractall(temp_dir)
+                    
+                    # Process extracted files
+                    for extracted_file in os.listdir(temp_dir):
+                        # Skip the original ZIP file
+                        if extracted_file == zip_filename:
+                            continue
+                            
+                        extracted_path = os.path.join(temp_dir, extracted_file)
+                        
+                        # Check if it's a file (not directory)
+                        if os.path.isfile(extracted_path):
+                            # Check if file type is allowed
+                            if not allowed_file(extracted_file):
+                                failed_count += 1
+                                continue
+                            
+                            try:
+                                # Generate a unique filename to avoid conflicts
+                                unique_filename = f"{batch_id}_{extracted_file}"
+                                final_path = os.path.join(Config.UPLOAD_FOLDER, unique_filename)
+                                
+                                # Move file to upload folder
+                                os.rename(extracted_path, final_path)
+                                
+                                # Insert document record in database with batch_id
+                                doc_id = insert_document(unique_filename, batch_id=batch_id)
+                                document_ids.append(doc_id)
+                                
+                                # Process the document
+                                success, error = process_single_document(final_path, unique_filename, doc_id)
+                                
+                                if success:
+                                    processed_count += 1
+                                else:
+                                    failed_count += 1
+                                
+                                # Update batch progress
+                                update_batch_status(batch_id, 'processing', processed_count, failed_count)
+                                
+                            except Exception as e:
+                                failed_count += 1
+                                update_batch_status(batch_id, 'processing', processed_count, failed_count)
+                                continue
+                                
             except Exception as e:
                 failed_count += 1
                 update_batch_status(batch_id, 'processing', processed_count, failed_count)

@@ -67,13 +67,15 @@ def classify_document(text):
     receipt_indicators = [
         'thank you', 'cash', 'credit', 'debit', 'total', 'subtotal', 'tax',
         'change', 'balance', 'paid', 'tender', 'transaction', 'store',
-        'grocery', 'gas', 'restaurant', 'tip', 'gratuity'
+        'grocery', 'gas', 'restaurant', 'tip', 'gratuity', 'order confirmation',
+        'order number', 'shipment', 'delivery', 'tracking', 'confirmation #'
     ]
     
     # Invoice indicators
     invoice_indicators = [
         'invoice', 'bill to', 'due date', 'terms', 'invoice #', 'inv-',
-        'amount due', 'balance due', 'payment due', 'remittance'
+        'amount due', 'balance due', 'payment due', 'remittance', 'po number',
+        'purchase order', 'bill for', 'invoice date'
     ]
     
     # Count matches
@@ -204,6 +206,20 @@ def find_merchant_name(text):
                         return line, 0.8
                 return line, 0.7
     
+    # For online purchase confirmations, look for "From:" or "Sold by:"
+    online_patterns = [
+        r'from[:\s]+([a-zA-Z\s]+)',
+        r'sold\s+by[:\s]+([a-zA-Z\s]+)',
+        r'merchant[:\s]+([a-zA-Z\s]+)'
+    ]
+    
+    for pattern in online_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            name = match.group(1).strip()
+            if len(name) > 2 and not re.search(r'\d', name):
+                return name, 0.8
+    
     # Fallback to general vendor name extraction
     return find_vendor_name(text)
 
@@ -218,6 +234,22 @@ def find_location(text):
         if match:
             return match.group(0), 0.8
     
+    # For online purchases, look for shipping address
+    shipping_patterns = [
+        r'shipping\s+address[:\s]+(.+?)(?:\n|$)',
+        r'deliver\s+to[:\s]+(.+?)(?:\n|$)',
+        r'ship\s+to[:\s]+(.+?)(?:\n|$)'
+    ]
+    
+    for pattern in shipping_patterns:
+        match = re.search(pattern, text, re.IGNORECASE | re.DOTALL)
+        if match:
+            address = match.group(1).strip()
+            # Clean up the address
+            address = re.sub(r'\s+', ' ', address)
+            if len(address) > 10:
+                return address, 0.7
+    
     return None, 0.0
 
 def find_payment_method(text):
@@ -225,9 +257,11 @@ def find_payment_method(text):
     text_lower = text.lower()
     payment_methods = {
         'cash': ['cash', 'cashier'],
-        'credit': ['credit', 'visa', 'mastercard', 'amex', 'discover'],
-        'debit': ['debit'],
-        'check': ['check', 'cheque']
+        'credit': ['credit', 'visa', 'mastercard', 'amex', 'discover', 'credit card'],
+        'debit': ['debit', 'debit card'],
+        'check': ['check', 'cheque'],
+        'paypal': ['paypal'],
+        'digital wallet': ['apple pay', 'google pay', 'samsung pay']
     }
     
     for method, keywords in payment_methods.items():
@@ -340,10 +374,14 @@ def find_detailed_line_items(text):
     
     # Pattern for items with quantity x unit price = total
     # e.g., "2 x $5.99 = $11.98" or "2 @ $5.99 $11.98"
-    detailed_pattern = r'(\d+(?:\.\d+)?)\s*[x@]\s*\$?([0-9,]+\.?[0-9]*)\s*(?:=\s*)?\$?([0-9,]+\.?[0-9]*)'
+    detailed_patterns = [
+        r'(\d+(?:\.\d+)?)\s*[x@]\s*\$?([0-9,]+\.?[0-9]*)\s*(?:=\s*)?\$?([0-9,]+\.?[0-9]*)',
+        r'([a-zA-Z\s]+?)\s+(\d+(?:\.\d+)?)\s*[x@]\s*\$?([0-9,]+\.?[0-9]*)\s*\$?([0-9,]+\.?[0-9]*)'
+    ]
     
     for line in lines:
-        match = re.search(detailed_pattern, line)
+        # Try first pattern (quantity first)
+        match = re.search(detailed_patterns[0], line)
         if match:
             quantity = float(match.group(1))
             unit_price = float(match.group(2).replace(',', ''))
@@ -359,6 +397,40 @@ def find_detailed_line_items(text):
                 'unit_price': unit_price,
                 'total_price': total_price
             })
+        else:
+            # Try second pattern (name first)
+            match = re.search(detailed_patterns[1], line)
+            if match:
+                item_name = match.group(1).strip()
+                quantity = float(match.group(2))
+                unit_price = float(match.group(3).replace(',', ''))
+                total_price = float(match.group(4).replace(',', ''))
+                
+                items.append({
+                    'item_name': item_name,
+                    'quantity': quantity,
+                    'unit_price': unit_price,
+                    'total_price': total_price
+                })
+    
+    # For online purchase confirmations, look for itemized lists
+    if not items:
+        # Pattern for online purchases: "Item Name $XX.XX"
+        online_pattern = r'([a-zA-Z\s]{3,}?)\s*\$([0-9,]+\.?[0-9]*)'
+        for line in lines:
+            match = re.search(online_pattern, line)
+            if match:
+                item_name = match.group(1).strip()
+                total_price = float(match.group(2).replace(',', ''))
+                
+                # Only add if it looks like an item (not a total/subtotal)
+                if not any(keyword in item_name.lower() for keyword in ['total', 'subtotal', 'tax', 'shipping']):
+                    items.append({
+                        'item_name': item_name,
+                        'quantity': 1.0,
+                        'unit_price': total_price,
+                        'total_price': total_price
+                    })
     
     # Fallback to simple line items if detailed pattern not found
     if not items:
@@ -383,12 +455,13 @@ def categorize_expense(text, merchant_name=None):
     text_lower = text.lower()
     
     categories = {
-        'Food & Dining': ['restaurant', 'cafe', 'coffee', 'food', 'dining', 'meal', 'burger', 'pizza', 'steak'],
-        'Grocery': ['grocery', 'market', 'supermarket', 'food store', 'whole foods', 'kroger', 'walmart', 'costco'],
-        'Transportation': ['gas', 'fuel', 'station', 'parking', 'uber', 'taxi', 'bus', 'train', 'airline'],
-        'Office Supplies': ['office', 'staples', 'office depot', 'paper', 'pen', 'printer'],
-        'Travel': ['hotel', 'motel', 'airbnb', 'flight', 'airline', 'travel', 'booking'],
-        'Entertainment': ['movie', 'cinema', 'theater', 'concert', 'event', 'ticket', 'amusement']
+        'Food & Dining': ['restaurant', 'cafe', 'coffee', 'food', 'dining', 'meal', 'burger', 'pizza', 'steak', 'mcdonalds', 'starbucks', 'subway'],
+        'Grocery': ['grocery', 'market', 'supermarket', 'food store', 'whole foods', 'kroger', 'walmart', 'costco', 'aldi', 'target'],
+        'Transportation': ['gas', 'fuel', 'station', 'parking', 'uber', 'taxi', 'bus', 'train', 'airline', 'shell', 'bp', 'exxon'],
+        'Office Supplies': ['office', 'staples', 'office depot', 'paper', 'pen', 'printer', 'staples', 'best buy'],
+        'Travel': ['hotel', 'motel', 'airbnb', 'flight', 'airline', 'travel', 'booking', 'marriott', 'hilton'],
+        'Entertainment': ['movie', 'cinema', 'theater', 'concert', 'event', 'ticket', 'amusement', 'netflix', 'spotify'],
+        'Online Services': ['amazon', 'ebay', 'paypal', 'subscription', 'monthly fee', 'service charge']
     }
     
     # Check merchant name first

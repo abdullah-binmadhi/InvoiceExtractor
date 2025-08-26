@@ -41,6 +41,14 @@ def validate_document(document_id):
     quality_issues = validate_data_quality(extracted_data)
     validation_issues.extend(quality_issues)
     
+    # 4. Vendor-specific validation
+    vendor_issues = validate_vendor_specific_rules(extracted_data, receipt_details)
+    validation_issues.extend(vendor_issues)
+    
+    # 5. Industry-specific validation
+    industry_issues = validate_industry_specific_rules(extracted_data, receipt_details)
+    validation_issues.extend(industry_issues)
+    
     # Store validation issues in database
     for issue in validation_issues:
         insert_validation_issue(
@@ -294,6 +302,166 @@ def validate_data_quality(extracted_data):
                 'severity': 'WARNING',
                 'description': f'Invalid date format: {date_value}'
             })
+    
+    return issues
+
+def validate_vendor_specific_rules(extracted_data, receipt_details):
+    """Validate vendor-specific rules"""
+    issues = []
+    
+    try:
+        merchant_name = None
+        if receipt_details and receipt_details.get('merchant_name'):
+            merchant_name = receipt_details.get('merchant_name')
+        elif extracted_data.get('vendor'):
+            merchant_name = extracted_data['vendor'].get('value')
+        
+        if not merchant_name:
+            return issues
+        
+        merchant_lower = merchant_name.lower()
+        
+        # Restaurant-specific validation
+        restaurant_keywords = ['restaurant', 'cafe', 'coffee', 'diner', 'bar', 'grill']
+        if any(keyword in merchant_lower for keyword in restaurant_keywords):
+            # Check tip percentage for restaurants (10-25% range)
+            total_amount = None
+            if receipt_details and receipt_details.get('total_amount'):
+                total_amount = float(receipt_details.get('total_amount', 0) or 0)
+            elif extracted_data.get('total'):
+                total_amount = float(extracted_data['total'].get('value', 0) or 0)
+            
+            tip_amount = None
+            if receipt_details and receipt_details.get('tip_amount'):
+                tip_amount = float(receipt_details.get('tip_amount', 0) or 0)
+            
+            if total_amount and tip_amount and total_amount > 0:
+                tip_percentage = tip_amount / total_amount
+                if tip_percentage < 0.10 or tip_percentage > 0.25:
+                    issues.append({
+                        'issue_type': 'SUSPICIOUS_AMOUNT',
+                        'severity': 'INFO',
+                        'description': f'Unusual tip percentage for restaurant: {tip_percentage:.2%} (expected range: 10-25%)'
+                    })
+        
+        # Gas station validation
+        gas_keywords = ['gas', 'fuel', 'shell', 'bp', 'exxon', 'chevron']
+        if any(keyword in merchant_lower for keyword in gas_keywords):
+            # Check for reasonable gas amounts (typically $10-$200)
+            total_amount = None
+            if receipt_details and receipt_details.get('total_amount'):
+                total_amount = float(receipt_details.get('total_amount', 0) or 0)
+            elif extracted_data.get('total'):
+                total_amount = float(extracted_data['total'].get('value', 0) or 0)
+            
+            if total_amount and (total_amount < 10 or total_amount > 200):
+                issues.append({
+                    'issue_type': 'SUSPICIOUS_AMOUNT',
+                    'severity': 'INFO',
+                    'description': f'Unusual gas purchase amount: ${total_amount:.2f} (typical range: $10-$200)'
+                })
+        
+        # Grocery store validation
+        grocery_keywords = ['grocery', 'market', 'supermarket', 'walmart', 'costco', 'aldi', 'kroger']
+        if any(keyword in merchant_lower for keyword in grocery_keywords):
+            # Check for reasonable grocery amounts (typically $20-$500)
+            total_amount = None
+            if receipt_details and receipt_details.get('total_amount'):
+                total_amount = float(receipt_details.get('total_amount', 0) or 0)
+            elif extracted_data.get('total'):
+                total_amount = float(extracted_data['total'].get('value', 0) or 0)
+            
+            if total_amount and (total_amount < 20 or total_amount > 500):
+                issues.append({
+                    'issue_type': 'SUSPICIOUS_AMOUNT',
+                    'severity': 'INFO',
+                    'description': f'Unusual grocery purchase amount: ${total_amount:.2f} (typical range: $20-$500)'
+                })
+    
+    except (ValueError, TypeError) as e:
+        issues.append({
+            'issue_type': 'MISSING_DATA',
+            'severity': 'INFO',
+            'description': f'Error in vendor-specific validation: {str(e)}'
+        })
+    
+    return issues
+
+def validate_industry_specific_rules(extracted_data, receipt_details):
+    """Validate industry-specific rules"""
+    issues = []
+    
+    try:
+        # Get category
+        category = None
+        if receipt_details and receipt_details.get('category'):
+            category = receipt_details.get('category')
+        elif extracted_data.get('category'):
+            category = extracted_data['category'].get('value')
+        
+        if not category:
+            return issues
+        
+        # Restaurant industry validation
+        if category == 'Food & Dining':
+            # Check tip percentage for restaurants (10-25% range)
+            total_amount = None
+            if receipt_details and receipt_details.get('total_amount'):
+                total_amount = float(receipt_details.get('total_amount', 0) or 0)
+            elif extracted_data.get('total'):
+                total_amount = float(extracted_data['total'].get('value', 0) or 0)
+            
+            tip_amount = None
+            if receipt_details and receipt_details.get('tip_amount'):
+                tip_amount = float(receipt_details.get('tip_amount', 0) or 0)
+            
+            if total_amount and tip_amount and total_amount > 0:
+                tip_percentage = tip_amount / total_amount
+                if tip_percentage < 0.10 or tip_percentage > 0.25:
+                    issues.append({
+                        'issue_type': 'SUSPICIOUS_AMOUNT',
+                        'severity': 'INFO',
+                        'description': f'Unusual tip percentage for restaurant: {tip_percentage:.2%} (expected range: 10-25%)'
+                    })
+        
+        # Transportation industry validation
+        elif category == 'Transportation':
+            # Check for reasonable gas amounts (typically $10-$200)
+            total_amount = None
+            if receipt_details and receipt_details.get('total_amount'):
+                total_amount = float(receipt_details.get('total_amount', 0) or 0)
+            elif extracted_data.get('total'):
+                total_amount = float(extracted_data['total'].get('value', 0) or 0)
+            
+            if total_amount and (total_amount < 10 or total_amount > 200):
+                issues.append({
+                    'issue_type': 'SUSPICIOUS_AMOUNT',
+                    'severity': 'INFO',
+                    'description': f'Unusual transportation amount: ${total_amount:.2f} (typical range: $10-$200)'
+                })
+        
+        # Office Supplies industry validation
+        elif category == 'Office Supplies':
+            # Check for reasonable office supply amounts (typically $5-$500)
+            total_amount = None
+            if receipt_details and receipt_details.get('total_amount'):
+                total_amount = float(receipt_details.get('total_amount', 0) or 0)
+            elif extracted_data.get('total'):
+                total_amount = float(extracted_data['total'].get('value', 0) or 0)
+            
+            if total_amount and (total_amount < 5 or total_amount > 500):
+                issues.append({
+                    'issue_type': 'SUSPICIOUS_AMOUNT',
+                    'severity': 'INFO',
+                    'description': f'Unusual office supplies amount: ${total_amount:.2f} (typical range: $5-$500)'
+                })
+    
+    except (ValueError, TypeError) as e:
+        issues.append({
+            'issue_type': 'MISSING_DATA',
+            'severity': 'INFO',
+            'description': f'Error in industry-specific validation: {str(e)}'
+        })
     
     return issues
 
