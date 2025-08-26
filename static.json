@@ -1,0 +1,6 @@
+{
+  "root": "frontend/",
+  "routes": {
+    "/**": "index.html"
+  }
+}

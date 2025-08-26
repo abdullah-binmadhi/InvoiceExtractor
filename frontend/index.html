@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>InvoiceExtractor</title>
     <link rel="stylesheet" href="styles.css">
+    <script src="config.js"></script>
 </head>
 <body>
     <div id="app">
@@ -19,145 +20,355 @@
         </header>
         
         <main>
-            <!-- Single Upload Section -->
-            <section id="upload-section" class="section active">
-                <div class="upload-container">
-                    <div id="drop-area" class="drop-area">
-                        <p>Drag & drop your invoice or receipt file here</p>
-                        <p>or</p>
-                        <button id="browse-btn" class="browse-btn">Browse Files</button>
-                        <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg" hidden>
-                    </div>
-                    <div id="progress-container" class="progress-container hidden">
-                        <div class="progress-bar">
-                            <div id="progress-fill" class="progress-fill"></div>
-                        </div>
-                        <p id="progress-text">Processing...</p>
-                    </div>
+            <!-- Demo Section -->
+            <section id="demo-section" class="section active">
+                <div class="demo-info">
+                    <h3>GitHub Pages Demo Version</h3>
+                    <p>This is a frontend-only demo of the InvoiceExtractor application. The full version requires a backend server for OCR processing and data extraction.</p>
+                    <p>In the full version, you would be able to:</p>
+                    <ul>
+                        <li>Upload PDF/image files (PDF, JPG, PNG)</li>
+                        <li>Automatically classify documents as invoices or receipts</li>
+                        <li>Extract data using OCR and text processing</li>
+                        <li>View and edit extracted data</li>
+                        <li>Export results as JSON/CSV</li>
+                        <li>Process multiple documents in batches</li>
+                        <li>Validate data with intelligent checks</li>
+                    </ul>
                 </div>
+                
+                <div class="demo-controls">
+                    <button id="show-invoice-demo" class="demo-btn">Show Invoice Sample</button>
+                    <button id="show-receipt-demo" class="demo-btn">Show Receipt Sample</button>
+                    <button id="show-batch-demo" class="demo-btn">Show Batch Sample</button>
+                </div>
+                
+                <div id="mock-results-container"></div>
             </section>
             
-            <!-- Batch Upload Section -->
-            <section id="batch-upload-section" class="section hidden">
-                <div class="batch-upload-container">
-                    <div id="batch-drop-area" class="drop-area">
-                        <p>Drag & drop multiple files or a ZIP file here</p>
-                        <p>or</p>
-                        <button id="batch-browse-btn" class="browse-btn">Browse Files</button>
-                        <input type="file" id="batch-file-input" accept=".pdf,.png,.jpg,.jpeg,.zip" multiple hidden>
+            <!-- Sample Results Section -->
+            <section id="sample-results-section" class="section hidden">
+                <h2>Sample Results</h2>
+                <div class="mock-results">
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Invoice Number</div>
+                        <div class="mock-result-value">INV-2023-001</div>
                     </div>
-                    <div class="batch-info">
-                        <p>Maximum 20 files per batch, 50MB total size limit</p>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Date</div>
+                        <div class="mock-result-value">08/26/2023</div>
                     </div>
-                    <div id="batch-progress-container" class="progress-container hidden">
-                        <div class="progress-bar">
-                            <div id="batch-progress-fill" class="progress-fill"></div>
-                        </div>
-                        <p id="batch-progress-text">Processing batch...</p>
-                        <div id="batch-progress-details" class="progress-details"></div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Vendor</div>
+                        <div class="mock-result-value">ABC Supplies Inc.</div>
                     </div>
-                </div>
-            </section>
-            
-            <!-- Results Section -->
-            <section id="results-section" class="section hidden">
-                <h2>Extracted Data</h2>
-                <div class="document-type-indicator">
-                    <span id="document-type">Document Type: <strong></strong></span>
-                </div>
-                <div id="validation-alerts" class="validation-alerts hidden">
-                    <div class="validation-header">
-                        <h3>Validation Issues</h3>
-                        <button id="view-validation-report" class="view-report-btn">View Report</button>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Total Amount</div>
+                        <div class="mock-result-value">$1,250.00</div>
                     </div>
-                    <div id="validation-summary" class="validation-summary"></div>
-                </div>
-                <div id="results-container" class="results-container">
-                    <!-- Results will be populated here -->
-                </div>
-                <div class="category-assignment">
-                    <label for="expense-category">Expense Category:</label>
-                    <select id="expense-category">
-                        <option value="Food & Dining">Food & Dining</option>
-                        <option value="Grocery">Grocery</option>
-                        <option value="Transportation">Transportation</option>
-                        <option value="Office Supplies">Office Supplies</option>
-                        <option value="Travel">Travel</option>
-                        <option value="Entertainment">Entertainment</option>
-                        <option value="Other">Other</option>
-                    </select>
-                </div>
-                <div class="actions">
-                    <button id="export-json" class="export-btn">Export as JSON</button>
-                    <button id="export-csv" class="export-btn">Export as CSV</button>
-                    <button id="save-corrections" class="save-btn">Save Corrections</button>
-                </div>
-            </section>
-            
-            <!-- Validation Report Modal -->
-            <div id="validation-modal" class="modal hidden">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h2>Validation Report</h2>
-                        <span class="close-modal">&times;</span>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tax Amount</div>
+                        <div class="mock-result-value">$87.50</div>
                     </div>
-                    <div class="modal-body">
-                        <div id="validation-issues-list" class="validation-issues-list"></div>
-                    </div>
-                    <div class="modal-footer">
-                        <button id="acknowledge-all-btn" class="save-btn">Acknowledge All Warnings</button>
-                        <button class="close-modal-btn">Close</button>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Batch Results Section -->
-            <section id="batch-results-section" class="section hidden">
-                <h2>Batch Results</h2>
-                <div class="batch-summary">
-                    <h3>Batch #<span id="batch-id"></span></h3>
-                    <div class="batch-stats">
-                        <div class="stat">
-                            <span class="stat-label">Total Files:</span>
-                            <span id="total-files" class="stat-value"></span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-label">Processed:</span>
-                            <span id="processed-files" class="stat-value"></span>
-                        </div>
-                        <div class="stat">
-                            <span class="stat-label">Failed:</span>
-                            <span id="failed-files" class="stat-value"></span>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Line Items</div>
+                        <div class="mock-result-value">
+                            <table style="width:100%;border-collapse:collapse;margin-top:0.5rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd;">Description</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Office Chairs (5)</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$750.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Desks (2)</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$400.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Delivery Fee</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$100.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-                <div id="batch-results-container" class="results-container">
-                    <!-- Batch results will be populated here -->
-                </div>
-                <div class="batch-actions">
-                    <button id="export-batch-json" class="export-btn">Export Batch as JSON</button>
-                    <button id="export-batch-csv" class="export-btn">Export Batch as CSV</button>
-                </div>
-            </section>
-            
-            <!-- History Section -->
-            <section id="history-section" class="section hidden">
-                <h2>Processing History</h2>
-                <div id="history-container" class="history-container">
-                    <!-- History will be populated here -->
-                </div>
-            </section>
-            
-            <!-- Batch History Section -->
-            <section id="batch-history-section" class="section hidden">
-                <h2>Batch Processing History</h2>
-                <div id="batch-history-container" class="history-container">
-                    <!-- Batch history will be populated here -->
+                
+                <h3 style="margin-top:2rem;">Receipt Sample</h3>
+                <div class="mock-results">
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Merchant Name</div>
+                        <div class="mock-result-value">Joe's Coffee Shop</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Date</div>
+                        <div class="mock-result-value">08/26/2023</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Time</div>
+                        <div class="mock-result-value">10:30 AM</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Total Amount</div>
+                        <div class="mock-result-value">$12.75</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tax Amount</div>
+                        <div class="mock-result-value">$1.15</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tip Amount</div>
+                        <div class="mock-result-value">$2.00</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Receipt Items</div>
+                        <div class="mock-result-value">
+                            <table style="width:100%;border-collapse:collapse;margin-top:0.5rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd;">Item</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Qty</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Price</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Coffee</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">1</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$3.50</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$3.50</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Pastry</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">2</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$2.25</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.50</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Sandwich</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">1</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.75</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.75</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
                 </div>
             </section>
         </main>
     </div>
     
-    <script src="app.js"></script>
+    <script>
+        // DOM Elements
+        const demoSection = document.getElementById('demo-section');
+        const sampleResultsSection = document.getElementById('sample-results-section');
+        const uploadBtn = document.getElementById('upload-btn');
+        const historyBtn = document.getElementById('history-btn');
+        const showInvoiceDemoBtn = document.getElementById('show-invoice-demo');
+        const showReceiptDemoBtn = document.getElementById('show-receipt-demo');
+        const showBatchDemoBtn = document.getElementById('show-batch-demo');
+        const mockResultsContainer = document.getElementById('mock-results-container');
+        
+        // Navigation
+        function showSection(section) {
+            demoSection.classList.remove('active');
+            sampleResultsSection.classList.remove('active');
+            section.classList.add('active');
+        }
+        
+        // Event Listeners
+        uploadBtn.addEventListener('click', () => showSection(demoSection));
+        historyBtn.addEventListener('click', () => showSection(sampleResultsSection));
+        
+        showInvoiceDemoBtn.addEventListener('click', showInvoiceDemo);
+        showReceiptDemoBtn.addEventListener('click', showReceiptDemo);
+        showBatchDemoBtn.addEventListener('click', showBatchDemo);
+        
+        // Demo Functions
+        function showInvoiceDemo() {
+            mockResultsContainer.innerHTML = `
+                <div class="mock-results">
+                    <h3>Invoice Sample Results</h3>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Document Type</div>
+                        <div class="mock-result-value">Invoice</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Invoice Number</div>
+                        <div class="mock-result-value">INV-2023-001</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Date</div>
+                        <div class="mock-result-value">08/26/2023</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Vendor</div>
+                        <div class="mock-result-value">ABC Supplies Inc.</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Total Amount</div>
+                        <div class="mock-result-value">$1,250.00</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tax Amount</div>
+                        <div class="mock-result-value">$87.50</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Line Items</div>
+                        <div class="mock-result-value">
+                            <table style="width:100%;border-collapse:collapse;margin-top:0.5rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd;">Description</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Amount</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Office Chairs (5)</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$750.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Desks (2)</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$400.00</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Delivery Fee</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$100.00</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showReceiptDemo() {
+            mockResultsContainer.innerHTML = `
+                <div class="mock-results">
+                    <h3>Receipt Sample Results</h3>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Document Type</div>
+                        <div class="mock-result-value">Receipt</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Merchant Name</div>
+                        <div class="mock-result-value">Joe's Coffee Shop</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Date</div>
+                        <div class="mock-result-value">08/26/2023</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Time</div>
+                        <div class="mock-result-value">10:30 AM</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Total Amount</div>
+                        <div class="mock-result-value">$12.75</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tax Amount</div>
+                        <div class="mock-result-value">$1.15</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Tip Amount</div>
+                        <div class="mock-result-value">$2.00</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Receipt Items</div>
+                        <div class="mock-result-value">
+                            <table style="width:100%;border-collapse:collapse;margin-top:0.5rem;">
+                                <thead>
+                                    <tr>
+                                        <th style="text-align:left;padding:0.5rem;border-bottom:1px solid #ddd;">Item</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Qty</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Price</th>
+                                        <th style="text-align:right;padding:0.5rem;border-bottom:1px solid #ddd;">Total</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Coffee</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">1</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$3.50</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$3.50</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Pastry</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">2</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$2.25</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.50</td>
+                                    </tr>
+                                    <tr>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;">Sandwich</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">1</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.75</td>
+                                        <td style="padding:0.5rem;border-bottom:1px solid #eee;text-align:right;">$4.75</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        function showBatchDemo() {
+            mockResultsContainer.innerHTML = `
+                <div class="mock-results">
+                    <h3>Batch Processing Sample</h3>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Batch ID</div>
+                        <div class="mock-result-value">#12345</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Status</div>
+                        <div class="mock-result-value">Completed</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Total Files</div>
+                        <div class="mock-result-value">5</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Processed</div>
+                        <div class="mock-result-value">5</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Failed</div>
+                        <div class="mock-result-value">0</div>
+                    </div>
+                    <div class="mock-result-item">
+                        <div class="mock-result-label">Results Summary</div>
+                        <div class="mock-result-value">
+                            <ul>
+                                <li>Invoice #INV-2023-001: $1,250.00</li>
+                                <li>Receipt from Joe's Coffee Shop: $12.75</li>
+                                <li>Invoice #INV-2023-002: $845.50</li>
+                                <li>Receipt from Gas Station: $45.20</li>
+                                <li>Online Purchase Confirmation: $29.99</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // Remove the original app.js script since we don't need it for the demo
+        document.addEventListener('DOMContentLoaded', function() {
+            const script = document.querySelector('script[src="app.js"]');
+            if (script) {
+                script.remove();
+            }
+        });
+    </script>
 </body>
 </html>

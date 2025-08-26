@@ -237,7 +237,7 @@ async function uploadFile(file) {
         simulateProgress(10, 30, 'Uploading...');
         
         // Upload file
-        const response = await fetch('http://localhost:5000/api/upload', {
+        const response = await fetch(`${window.APP_CONFIG.apiUrl}/api/upload`, {
             method: 'POST',
             body: formData
         });
@@ -292,7 +292,7 @@ async function uploadBatchFiles(files) {
     
     try {
         // Upload batch
-        const response = await fetch('http://localhost:5000/api/upload-batch', {
+        const response = await fetch(`${window.APP_CONFIG.apiUrl}/api/upload-batch`, {
             method: 'POST',
             body: formData
         });
@@ -503,7 +503,7 @@ function displayResults(results) {
 
 async function loadValidationIssues(documentId) {
     try {
-        const response = await fetch(`http://localhost:5000/api/validation-summary/${documentId}`);
+        const response = await fetch(`${window.APP_CONFIG.apiUrl}/api/validation-summary/${documentId}`);
         if (!response.ok) {
             throw new Error('Failed to load validation issues');
         }
@@ -585,7 +585,7 @@ function showValidationModal() {
 
 async function acknowledgeIssue(issueId) {
     try {
-        const response = await fetch(`http://localhost:5000/api/ignore-warning/${issueId}`, {
+        const response = await fetch(`${window.APP_CONFIG.apiUrl}/api/ignore-warning/${issueId}`, {
             method: 'POST'
         });
         
@@ -622,7 +622,7 @@ async function acknowledgeAllWarnings() {
 async function displayBatchResults(batchId) {
     try {
         // Fetch batch results
-        const response = await fetch(`http://localhost:5000/api/batch-results/${batchId}`);
+        const response = await fetch(`${window.APP_CONFIG.apiUrl}/api/batch-results/${batchId}`);
         if (!response.ok) {
             throw new Error(`Failed to fetch batch results: ${response.statusText}`);
         }
@@ -718,7 +718,7 @@ function formatFieldName(field) {
 
 async function loadHistory() {
     try {
-        const response = await fetch('http://localhost:5000/api/history');
+        const response = await fetch(`${window.APP_CONFIG.apiUrl}/api/history`);
         if (!response.ok) {
             throw new Error(`Failed to load history: ${response.statusText}`);
         }
@@ -783,7 +783,7 @@ async function exportResults(format) {
     if (!currentDocumentId) return;
     
     try {
-        const response = await fetch(`http://localhost:5000/api/export/${currentDocumentId}/${format}`);
+        const response = await fetch(`${window.APP_CONFIG.apiUrl}/api/export/${currentDocumentId}/${format}`);
         if (!response.ok) {
             throw new Error(`Export failed: ${response.statusText}`);
         }
@@ -820,7 +820,7 @@ async function exportBatchResults(format) {
     if (!currentBatchId) return;
     
     try {
-        const response = await fetch(`http://localhost:5000/api/download-batch/${currentBatchId}`, {
+        const response = await fetch(`${window.APP_CONFIG.apiUrl}/api/download-batch/${currentBatchId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -877,7 +877,7 @@ async function saveCorrections() {
     corrections['category'] = expenseCategorySelect.value;
     
     try {
-        const response = await fetch(`http://localhost:5000/api/correct/${currentDocumentId}`, {
+        const response = await fetch(`${window.APP_CONFIG.apiUrl}/api/correct/${currentDocumentId}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
