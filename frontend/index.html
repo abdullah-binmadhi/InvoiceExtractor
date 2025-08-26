@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>InvoiceExtractor</title>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <div id="app">
+        <header>
+            <h1>InvoiceExtractor</h1>
+            <nav>
+                <button id="upload-btn" class="nav-btn active">Upload</button>
+                <button id="history-btn" class="nav-btn">History</button>
+            </nav>
+        </header>
+        
+        <main>
+            <!-- Upload Section -->
+            <section id="upload-section" class="section active">
+                <div class="upload-container">
+                    <div id="drop-area" class="drop-area">
+                        <p>Drag & drop your invoice file here</p>
+                        <p>or</p>
+                        <button id="browse-btn" class="browse-btn">Browse Files</button>
+                        <input type="file" id="file-input" accept=".pdf,.png,.jpg,.jpeg" hidden>
+                    </div>
+                    <div id="progress-container" class="progress-container hidden">
+                        <div class="progress-bar">
+                            <div id="progress-fill" class="progress-fill"></div>
+                        </div>
+                        <p id="progress-text">Processing...</p>
+                    </div>
+                </div>
+            </section>
+            
+            <!-- Results Section -->
+            <section id="results-section" class="section hidden">
+                <h2>Extracted Data</h2>
+                <div id="results-container" class="results-container">
+                    <!-- Results will be populated here -->
+                </div>
+                <div class="actions">
+                    <button id="export-json" class="export-btn">Export as JSON</button>
+                    <button id="export-csv" class="export-btn">Export as CSV</button>
+                    <button id="save-corrections" class="save-btn">Save Corrections</button>
+                </div>
+            </section>
+            
+            <!-- History Section -->
+            <section id="history-section" class="section hidden">
+                <h2>Processing History</h2>
+                <div id="history-container" class="history-container">
+                    <!-- History will be populated here -->
+                </div>
+            </section>
+        </main>
+    </div>
+    
+    <script src="app.js"></script>
+</body>
+</html>
