@@ -9,9 +9,11 @@ from database import (
     get_document_history, insert_correction, insert_extraction, authenticate_user,
     insert_receipt_item, get_receipt_items, insert_receipt_details, get_receipt_details,
     update_document_type, get_document_type, insert_batch_job, update_batch_status,
-    get_batch_job, get_batch_documents, get_batch_history
+    get_batch_job, get_batch_documents, get_batch_history, insert_validation_issue,
+    get_validation_issues, acknowledge_validation_issue, get_unacknowledged_issues_count
 )
 from processing import process_document, classify_document
+from validation import validate_document, get_validation_summary
 import csv
 import io
 
@@ -77,6 +79,9 @@ def process_single_document(file_path, filename, doc_id):
                             item.get('unit_price', 0.0),
                             item.get('total_price', 0.0)
                         )
+        
+        # Run validation on the processed document
+        validate_document(doc_id)
         
         update_document_status(doc_id, 'completed')
         return True, None
@@ -540,3 +545,45 @@ def login():
             
     except Exception as e:
         return jsonify({'error': f'Login failed: {str(e)}'}), 500
+
+@api_bp.route('/validate/<int:document_id>', methods=['GET'])
+def validate_document_endpoint(document_id):
+    """Run validation checks on a document"""
+    try:
+        # Run validation
+        issues = validate_document(document_id)
+        
+        return jsonify({
+            'document_id': document_id,
+            'issues': issues,
+            'message': f'Validation completed with {len(issues)} issues found'
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'Validation failed: {str(e)}'}), 500
+
+@api_bp.route('/ignore-warning/<int:issue_id>', methods=['POST'])
+def ignore_warning(issue_id):
+    """Mark a validation warning as acknowledged"""
+    try:
+        # Mark issue as acknowledged
+        acknowledge_validation_issue(issue_id)
+        
+        return jsonify({
+            'issue_id': issue_id,
+            'message': 'Validation issue marked as acknowledged'
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'Failed to acknowledge issue: {str(e)}'}), 500
+
+@api_bp.route('/validation-summary/<int:document_id>', methods=['GET'])
+def get_validation_summary_endpoint(document_id):
+    """Get validation summary for a document"""
+    try:
+        summary = get_validation_summary(document_id)
+        
+        return jsonify({
+            'document_id': document_id,
+            'summary': summary
+        }), 200
+    except Exception as e:
+        return jsonify({'error': f'Failed to retrieve validation summary: {str(e)}'}), 500

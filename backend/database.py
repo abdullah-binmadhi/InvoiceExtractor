@@ -106,6 +106,20 @@ def init_db():
         )
     ''')
     
+    # Create validation_issues table for validation results
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS validation_issues (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            document_id INTEGER NOT NULL,
+            issue_type TEXT NOT NULL,  -- MATH_ERROR, DUPLICATE, SUSPICIOUS_AMOUNT, MISSING_DATA, LOW_CONFIDENCE
+            severity TEXT NOT NULL,    -- ERROR, WARNING, INFO
+            description TEXT NOT NULL,
+            acknowledged BOOLEAN DEFAULT FALSE,
+            created_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (document_id) REFERENCES documents (id)
+        )
+    ''')
+    
     # Create a default admin user if none exists
     cursor.execute("SELECT COUNT(*) FROM users")
     if cursor.fetchone()[0] == 0:
@@ -378,3 +392,51 @@ def get_batch_history(user_id):
     results = cursor.fetchall()
     conn.close()
     return [dict(row) for row in results]
+
+def insert_validation_issue(document_id, issue_type, severity, description):
+    """Insert a validation issue"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "INSERT INTO validation_issues (document_id, issue_type, severity, description) VALUES (?, ?, ?, ?)",
+        (document_id, issue_type, severity, description)
+    )
+    issue_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return issue_id
+
+def get_validation_issues(document_id):
+    """Get all validation issues for a document"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT * FROM validation_issues WHERE document_id = ? ORDER BY severity, created_date",
+        (document_id,)
+    )
+    results = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in results]
+
+def acknowledge_validation_issue(issue_id):
+    """Mark a validation issue as acknowledged"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "UPDATE validation_issues SET acknowledged = TRUE WHERE id = ?",
+        (issue_id,)
+    )
+    conn.commit()
+    conn.close()
+
+def get_unacknowledged_issues_count(document_id):
+    """Get count of unacknowledged validation issues for a document"""
+    conn = get_db()
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT COUNT(*) as count FROM validation_issues WHERE document_id = ? AND acknowledged = FALSE",
+        (document_id,)
+    )
+    result = cursor.fetchone()
+    conn.close()
+    return result[0] if result else 0

@@ -65,6 +65,13 @@
                 <div class="document-type-indicator">
                     <span id="document-type">Document Type: <strong></strong></span>
                 </div>
+                <div id="validation-alerts" class="validation-alerts hidden">
+                    <div class="validation-header">
+                        <h3>Validation Issues</h3>
+                        <button id="view-validation-report" class="view-report-btn">View Report</button>
+                    </div>
+                    <div id="validation-summary" class="validation-summary"></div>
+                </div>
                 <div id="results-container" class="results-container">
                     <!-- Results will be populated here -->
                 </div>
@@ -86,6 +93,23 @@
                     <button id="save-corrections" class="save-btn">Save Corrections</button>
                 </div>
             </section>
+            
+            <!-- Validation Report Modal -->
+            <div id="validation-modal" class="modal hidden">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2>Validation Report</h2>
+                        <span class="close-modal">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div id="validation-issues-list" class="validation-issues-list"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button id="acknowledge-all-btn" class="save-btn">Acknowledge All Warnings</button>
+                        <button class="close-modal-btn">Close</button>
+                    </div>
+                </div>
+            </div>
             
             <!-- Batch Results Section -->
             <section id="batch-results-section" class="section hidden">

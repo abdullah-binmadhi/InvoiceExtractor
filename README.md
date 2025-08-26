@@ -12,8 +12,9 @@ A web application for extracting invoice and receipt data from PDFs and images u
 - Processing history with document type indicators
 - Simple authentication
 - Automatic expense categorization
-- **Batch processing of multiple documents**
-- **ZIP file support for batch uploads**
+- Batch processing of multiple documents
+- ZIP file support for batch uploads
+- **Intelligent validation to catch errors and suspicious data**
 
 ## Tech Stack
 - Backend: Python/Flask
@@ -34,6 +35,7 @@ InvoiceExtractor/
 │   ├── database.py         # Database operations and schema
 │   ├── processing.py        # Document processing and OCR
 │   ├── routes.py           # API endpoints
+│   ├── validation.py        # Intelligent validation logic
 │   ├── requirements.txt    # Python dependencies
 │   └── test_backend.py     # Backend unit tests
 └── frontend/
@@ -99,6 +101,11 @@ InvoiceExtractor/
 - GET /api/batch-results/{batch_id} - Get all results from batch
 - POST /api/download-batch/{batch_id} - Download batch results (JSON or CSV)
 
+### Validation Endpoints
+- GET /api/validate/{document_id} - Run validation checks
+- POST /api/ignore-warning/{issue_id} - Mark validation warning as acknowledged
+- GET /api/validation-summary/{document_id} - Get validation summary
+
 ## Database Schema
 - documents table: id, filename, upload_date, status, document_type, batch_id
 - extractions table: id, document_id, field_name, field_value, confidence_score
@@ -107,6 +114,7 @@ InvoiceExtractor/
 - receipt_items table: id, document_id, item_name, quantity, unit_price, total_price
 - receipt_details table: id, document_id, merchant_name, location, payment_method, tip_amount, subtotal, tax_amount, total_amount, cashier_name, transaction_time, category
 - batch_jobs table: id, user_id, status, total_files, processed_files, failed_files, created_date, completed_date
+- validation_issues table: id, document_id, issue_type, severity, description, acknowledged, created_date
 
 ## Processing Logic
 
@@ -152,6 +160,38 @@ Automatic categorization based on merchant names and keywords:
 4. Update batch progress as each document completes
 5. Generate combined results when batch finishes
 
+### Intelligent Validation
+1. Run validation automatically after extraction
+2. Store validation results with severity levels:
+   - ERROR: Critical issues that block processing
+   - WARNING: Suspicious but potentially valid
+   - INFO: Minor quality issues
+3. Validation categories:
+   - MATH_ERROR: Numbers don't add up
+   - DUPLICATE: Potential duplicate document
+   - SUSPICIOUS_AMOUNT: Unusual amounts
+   - MISSING_DATA: Required fields empty
+   - LOW_CONFIDENCE: OCR accuracy concerns
+
+## Validation Rules
+
+### 1. Mathematical Validation
+- Verify line items sum to subtotal
+- Check tax calculations (standard rates: 5%, 7.5%, 10%, etc.)
+- Validate tip percentages (10-25% range)
+- Flag amounts that don't add up
+
+### 2. Business Logic Validation
+- Duplicate invoice detection (same vendor + amount + date)
+- Unreasonable amounts (over $10,000 or under $1)
+- Future dates (invoices dated in future)
+- Weekend business hours for retail receipts
+
+### 3. Data Quality Checks
+- Missing critical fields (amount, vendor, date)
+- Low confidence OCR extractions (under 70%)
+- Malformed data (invalid date formats, negative amounts)
+
 ## Implementation Details
 
 ### Backend Components
@@ -160,6 +200,7 @@ Automatic categorization based on merchant names and keywords:
 - **database.py**: SQLite database schema and operations
 - **processing.py**: Document processing logic with OCR and regex pattern matching
 - **routes.py**: API endpoints for upload, results, corrections, history, and authentication
+- **validation.py**: Intelligent validation logic
 
 ### Frontend Components
 - **index.html**: Main application interface with upload, results, and history sections
@@ -182,6 +223,7 @@ Automatic categorization based on merchant names and keywords:
 12. **Expense Categorization**: Automatic categorization of expenses
 13. **Batch Processing**: Handle multiple documents simultaneously
 14. **ZIP File Support**: Extract and process documents from ZIP archives
+15. **Intelligent Validation**: Catch errors and suspicious data with detailed reporting
 
 ## Batch Processing Features
 - Accept ZIP files containing multiple documents
@@ -191,6 +233,16 @@ Automatic categorization based on merchant names and keywords:
 - Batch results summary with success/error counts
 - Combined export options (JSON, CSV)
 - Batch history view
+
+## Validation Features
+- Automatic validation after document processing
+- Color-coded alerts for different severity levels
+- Detailed validation report popup
+- Bulk validation overview for batches
+- "Acknowledge and proceed" buttons for warnings
+- Learn from user corrections to improve validation
+- Vendor-specific validation rules (expected amount ranges)
+- Industry-specific validation (restaurant tips vs office supplies)
 
 ## Deployment Scripts
 - **deploy.sh**: Automated setup script for macOS/Linux

@@ -5,6 +5,7 @@ const resultsSection = document.getElementById('results-section');
 const batchResultsSection = document.getElementById('batch-results-section');
 const historySection = document.getElementById('history-section');
 const batchHistorySection = document.getElementById('batch-history-section');
+const validationModal = document.getElementById('validation-modal');
 
 const uploadBtn = document.getElementById('upload-btn');
 const batchUploadBtn = document.getElementById('batch-upload-btn');
@@ -30,12 +31,17 @@ const resultsContainer = document.getElementById('results-container');
 const batchResultsContainer = document.getElementById('batch-results-container');
 const historyContainer = document.getElementById('history-container');
 const batchHistoryContainer = document.getElementById('batch-history-container');
+const validationAlerts = document.getElementById('validation-alerts');
+const validationSummary = document.getElementById('validation-summary');
+const validationIssuesList = document.getElementById('validation-issues-list');
+const viewValidationReportBtn = document.getElementById('view-validation-report');
 
 const exportJsonBtn = document.getElementById('export-json');
 const exportCsvBtn = document.getElementById('export-csv');
 const exportBatchJsonBtn = document.getElementById('export-batch-json');
 const exportBatchCsvBtn = document.getElementById('export-batch-csv');
 const saveCorrectionsBtn = document.getElementById('save-corrections');
+const acknowledgeAllBtn = document.getElementById('acknowledge-all-btn');
 
 const documentTypeIndicator = document.querySelector('.document-type-indicator');
 const expenseCategorySelect = document.getElementById('expense-category');
@@ -45,11 +51,15 @@ const totalFilesElement = document.getElementById('total-files');
 const processedFilesElement = document.getElementById('processed-files');
 const failedFilesElement = document.getElementById('failed-files');
 
+// Modal elements
+const closeModalButtons = document.querySelectorAll('.close-modal, .close-modal-btn');
+
 // State
 let currentDocumentId = null;
 let currentBatchId = null;
 let extractedData = {};
 let documentType = 'unknown';
+let validationIssues = [];
 
 // Navigation
 function showSection(section) {
@@ -127,6 +137,23 @@ exportCsvBtn.addEventListener('click', () => exportResults('csv'));
 exportBatchJsonBtn.addEventListener('click', () => exportBatchResults('json'));
 exportBatchCsvBtn.addEventListener('click', () => exportBatchResults('csv'));
 saveCorrectionsBtn.addEventListener('click', saveCorrections);
+viewValidationReportBtn.addEventListener('click', showValidationModal);
+
+// Modal event listeners
+closeModalButtons.forEach(button => {
+    button.addEventListener('click', () => {
+        validationModal.classList.add('hidden');
+    });
+});
+
+acknowledgeAllBtn.addEventListener('click', acknowledgeAllWarnings);
+
+// Close modal when clicking outside
+window.addEventListener('click', (e) => {
+    if (e.target === validationModal) {
+        validationModal.classList.add('hidden');
+    }
+});
 
 // File Handling
 function handleFileSelect(e) {
@@ -236,6 +263,7 @@ async function uploadFile(file) {
         // Show results after a short delay
         setTimeout(() => {
             displayResults(data.results);
+            loadValidationIssues(data.id);
             showSection(resultsSection);
         }, 500);
         
@@ -448,6 +476,129 @@ function displayResults(results) {
     // Set expense category if available
     if (results.category?.value) {
         expenseCategorySelect.value = results.category.value;
+    }
+}
+
+async function loadValidationIssues(documentId) {
+    try {
+        const response = await fetch(`http://localhost:5000/api/validation-summary/${documentId}`);
+        if (!response.ok) {
+            throw new Error(`Failed to load validation issues: ${response.statusText}`);
+        }
+        
+        const data = await response.json();
+        const summary = data.summary;
+        
+        // Display validation summary
+        if (summary.total_issues > 0) {
+            validationAlerts.classList.remove('hidden');
+            
+            // Set alert style based on severity
+            validationAlerts.className = 'validation-alerts';
+            if (summary.errors > 0) {
+                validationAlerts.classList.add('error');
+            } else if (summary.warnings > 0) {
+                validationAlerts.classList.add('warning');
+            } else {
+                validationAlerts.classList.add('info');
+            }
+            
+            // Display summary
+            validationSummary.innerHTML = `
+                <div><strong>${summary.total_issues}</strong> issues found</div>
+                <div><strong>${summary.errors}</strong> errors, <strong>${summary.warnings}</strong> warnings, <strong>${summary.info}</strong> info</div>
+                <div><strong>${summary.unacknowledged}</strong> unacknowledged issues</div>
+            `;
+        } else {
+            validationAlerts.classList.add('hidden');
+        }
+        
+        // Load detailed validation issues
+        const issuesResponse = await fetch(`http://localhost:5000/api/validate/${documentId}`);
+        if (issuesResponse.ok) {
+            const issuesData = await issuesResponse.json();
+            validationIssues = issuesData.issues;
+        }
+        
+    } catch (error) {
+        console.error('Validation load error:', error);
+        validationAlerts.classList.add('hidden');
+    }
+}
+
+function showValidationModal() {
+    // Display validation issues in modal
+    validationIssuesList.innerHTML = '';
+    
+    if (validationIssues.length === 0) {
+        validationIssuesList.innerHTML = '<p>No validation issues found.</p>';
+        validationModal.classList.remove('hidden');
+        return;
+    }
+    
+    validationIssues.forEach(issue => {
+        const issueDiv = document.createElement('div');
+        issueDiv.className = `validation-issue ${issue.severity.toLowerCase()}`;
+        
+        issueDiv.innerHTML = `
+            <div class="issue-header">
+                <div class="issue-type">${issue.issue_type}</div>
+                <div class="issue-severity severity ${issue.severity.toLowerCase()}">${issue.severity}</div>
+            </div>
+            <div class="issue-description">${issue.description}</div>
+            ${issue.severity === 'WARNING' ? `<button class="acknowledge-btn" data-issue-id="${issue.id}">Acknowledge</button>` : ''}
+        `;
+        
+        validationIssuesList.appendChild(issueDiv);
+    });
+    
+    // Add event listeners to acknowledge buttons
+    const acknowledgeButtons = validationIssuesList.querySelectorAll('.acknowledge-btn');
+    acknowledgeButtons.forEach(button => {
+        button.addEventListener('click', async (e) => {
+            const issueId = e.target.dataset.issueId;
+            await acknowledgeIssue(issueId);
+            e.target.textContent = 'Acknowledged';
+            e.target.disabled = true;
+        });
+    });
+    
+    validationModal.classList.remove('hidden');
+}
+
+async function acknowledgeIssue(issueId) {
+    try {
+        const response = await fetch(`http://localhost:5000/api/ignore-warning/${issueId}`, {
+            method: 'POST'
+        });
+        
+        if (!response.ok) {
+            throw new Error(`Failed to acknowledge issue: ${response.statusText}`);
+        }
+        
+        return await response.json();
+    } catch (error) {
+        console.error('Acknowledge error:', error);
+        alert(`Failed to acknowledge issue: ${error.message}`);
+    }
+}
+
+async function acknowledgeAllWarnings() {
+    try {
+        // Acknowledge all warning issues
+        const warningIssues = validationIssues.filter(issue => issue.severity === 'WARNING');
+        
+        for (const issue of warningIssues) {
+            await acknowledgeIssue(issue.id);
+        }
+        
+        // Refresh the validation display
+        showValidationModal();
+        
+        alert('All warnings acknowledged successfully!');
+    } catch (error) {
+        console.error('Acknowledge all error:', error);
+        alert(`Failed to acknowledge all warnings: ${error.message}`);
     }
 }
 
